@@ -20,9 +20,6 @@ export async function GET(
   try {
     await ensureInitialized()
     const song = await ytmusic.getSong(videoId)
-
-    const rawThumbnail = song.thumbnails?.[song.thumbnails.length - 1]?.url || '';
-    const crispThumbnail = rawThumbnail.replace(/([=\-])w\d+-h\d+.*$/, '$1w1080-h1080-l90-rj');
     
     return NextResponse.json({
       videoId: song.videoId,
@@ -30,8 +27,8 @@ export async function GET(
       artist: song.artist?.name || 'Unknown Artist',
       album: song.album?.name || '',
       duration: song.duration || 0,
-      thumbnail: crispThumbnail,
-    }, { headers: { 'Cache-Control': 'no-store' } })
+      thumbnail: song.thumbnails?.[song.thumbnails.length - 1]?.url || '',
+    })
   } catch (error) {
     console.error('Failed to get song:', error)
     return NextResponse.json({ error: 'Failed to get song details' }, { status: 500 })
