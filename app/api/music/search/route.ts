@@ -23,16 +23,22 @@ export async function GET(request: NextRequest) {
     await ensureInitialized()
     const results = await ytmusic.searchSongs(query)
     
-    const songs = results.slice(0, 20).map((song) => ({
-      videoId: song.videoId,
-      title: song.name,
-      artist: song.artist?.name || 'Unknown Artist',
-      album: song.album?.name || '',
-      duration: song.duration || 0,
-      thumbnail: song.thumbnails?.[0]?.url || '',
-    }))
+    const songs = results.slice(0, 20).map((song) => {
+      // Re-map string URL parameters replacing 120-120 formats universally giving true full hi-res crisp 1080 artwork!
+      const bestThumbnail = (song.thumbnails?.[song.thumbnails.length - 1]?.url || song.thumbnails?.[0]?.url || '');
+      const maxResThumbnail = bestThumbnail.replace(/([=\-])w\d+-h\d+.*$/, '$1w1080-h1080-l90-rj');
 
-    return NextResponse.json({ results: songs })
+      return {
+        videoId: song.videoId,
+        title: song.name,
+        artist: song.artist?.name || 'Unknown Artist',
+        album: song.album?.name || '',
+        duration: song.duration || 0,
+        thumbnail: maxResThumbnail, 
+      }
+    })
+
+    return NextResponse.json({ results: songs }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('YouTube Music search error:', error)
     return NextResponse.json({ error: 'Failed to search songs' }, { status: 500 })
