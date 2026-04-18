@@ -1,96 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Multiple API sources for audio streaming - try all until one works
-const INVIDIOUS_INSTANCES = [
-  'https://inv.nadeko.net',
-  'https://invidious.nerdvpn.de',
-  'https://vid.puffyan.us',
-  'https://invidious.snopyta.org',
-  'https://invidious.kavin.rocks',
-]
-
+// Updated working Piped API instances from official documentation
 const PIPED_INSTANCES = [
   'https://pipedapi.kavin.rocks',
-  'https://pipedapi.syncpundit.io',
+  'https://pipedapi.adminforge.de',
   'https://api.piped.yt',
-  'https://pipedapi.in.projectsegfau.lt',
-  'https://watchapi.whatever.social',
+  'https://pipedapi.leptons.xyz',
+  'https://piped-api.privacy.com.de',
+  'https://pipedapi.reallyaweso.me',
+  'https://pipedapi.drgns.space',
+  'https://pipedapi.owo.si',
+  'https://piped-api.codespace.cz',
+  'https://api.piped.private.coffee',
 ]
 
-async function tryInvidiousStream(videoId: string): Promise<{ audioUrl: string; duration: number } | null> {
-  for (const instance of INVIDIOUS_INSTANCES) {
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 8000)
-      
-      const response = await fetch(`${instance}/api/v1/videos/${videoId}`, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
-      })
-      
-      clearTimeout(timeoutId)
+async function tryPipedStream(videoId: string, instance: string): Promise<{ audioUrl: string; duration: number; instance: string } | null> {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+    
+    const response = await fetch(`${instance}/streams/${videoId}`, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      },
+    })
+    
+    clearTimeout(timeoutId)
 
-      if (!response.ok) continue
-
-      const data = await response.json()
-      
-      // Find the best audio stream from adaptiveFormats
-      const audioFormats = (data.adaptiveFormats || [])
-        .filter((format: { type: string }) => format.type?.startsWith('audio/'))
-        .sort((a: { bitrate: number }, b: { bitrate: number }) => (b.bitrate || 0) - (a.bitrate || 0))
-
-      if (audioFormats.length > 0) {
-        return {
-          audioUrl: audioFormats[0].url,
-          duration: data.lengthSeconds || 0,
-        }
-      }
-    } catch (error) {
-      console.log(`[v0] Invidious instance ${instance} failed:`, error)
-      continue
+    if (!response.ok) {
+      return null
     }
-  }
-  return null
-}
 
-async function tryPipedStream(videoId: string): Promise<{ audioUrl: string; duration: number } | null> {
-  for (const instance of PIPED_INSTANCES) {
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 8000)
-      
-      const response = await fetch(`${instance}/streams/${videoId}`, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
-      })
-      
-      clearTimeout(timeoutId)
+    const data = await response.json()
+    
+    // Get audio streams and sort by bitrate (highest quality first)
+    const audioStreams = (data.audioStreams || [])
+      .filter((stream: { url?: string; mimeType?: string }) => stream.url && stream.mimeType?.includes('audio'))
+      .sort((a: { bitrate?: number }, b: { bitrate?: number }) => (b.bitrate || 0) - (a.bitrate || 0))
 
-      if (!response.ok) continue
-
-      const data = await response.json()
-      
-      // Find the best audio stream
-      const audioStreams = (data.audioStreams || [])
-        .filter((stream: { mimeType: string }) => stream.mimeType?.includes('audio'))
-        .sort((a: { bitrate: number }, b: { bitrate: number }) => (b.bitrate || 0) - (a.bitrate || 0))
-
-      if (audioStreams.length > 0) {
-        return {
-          audioUrl: audioStreams[0].url,
-          duration: data.duration || 0,
-        }
+    if (audioStreams.length > 0) {
+      return {
+        audioUrl: audioStreams[0].url,
+        duration: data.duration || 0,
+        instance,
       }
-    } catch (error) {
-      console.log(`[v0] Piped instance ${instance} failed:`, error)
-      continue
     }
+    
+    return null
+  } catch {
+    return null
   }
-  return null
 }
 
 export async function GET(
@@ -99,27 +60,32 @@ export async function GET(
 ) {
   const { videoId } = await params
 
-  try {
-    // Try Invidious first, then Piped
-    let result = await tryInvidiousStream(videoId)
-    
-    if (!result) {
-      result = await tryPipedStream(videoId)
-    }
-
-    if (!result) {
-      return NextResponse.json(
-        { error: 'Could not find audio stream from any source. Please try another song.' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(result)
-  } catch (error) {
-    console.error('[v0] Stream error:', error)
-    return NextResponse.json(
-      { error: 'Failed to get audio stream' },
-      { status: 500 }
-    )
+  if (!videoId) {
+    return NextResponse.json({ error: 'Video ID is required' }, { status: 400 })
   }
+
+  // Try all Piped instances in parallel for faster response
+  const results = await Promise.allSettled(
+    PIPED_INSTANCES.map(instance => tryPipedStream(videoId, instance))
+  )
+
+  // Find the first successful result
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value) {
+      return NextResponse.json(result.value)
+    }
+  }
+
+  // If parallel failed, try sequentially with longer timeout
+  for (const instance of PIPED_INSTANCES) {
+    const result = await tryPipedStream(videoId, instance)
+    if (result) {
+      return NextResponse.json(result)
+    }
+  }
+
+  return NextResponse.json(
+    { error: 'Could not find audio stream. This song may be region-restricted or unavailable.' },
+    { status: 404 }
+  )
 }
