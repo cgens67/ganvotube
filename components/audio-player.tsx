@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +41,7 @@ import {
   ChevronUp, ExternalLink, History, Library, UserCircle2, LogOut,
   Maximize, Minimize, Settings, TrendingUp, ListPlus, Disc3, MicVocal,
   ArrowLeft, Palette, LayoutTemplate, CornerUpRight, MousePointerClick, 
-  SlidersHorizontal, Hand, RefreshCw
+  SlidersHorizontal, Hand, RefreshCw, ChevronRight
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -61,6 +61,7 @@ const auth = typeof window !== "undefined" ? getAuth(app) : null;
 const db = typeof window !== "undefined" ? getFirestore(app) : null;
 const googleProvider = typeof window !== "undefined" ? new GoogleAuthProvider() : null;
 
+// --- INTERFACES ---
 interface Song {
   videoId: string
   title: string
@@ -88,60 +89,68 @@ interface LyricsData {
 }
 
 export function AudioPlayer() {
+  // UI & Player States
   const [isDark, setIsDark] = useState(false)
   const[isFullscreen, setIsFullscreen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const[searchResults, setSearchResults] = useState<Song[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
-  const [searchHistory, setSearchHistory] = useState<string[]>([])
+  const[searchHistory, setSearchHistory] = useState<string[]>([])
   const [queue, setQueue] = useState<Song[]>([])
   const[currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const[duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(80)
-  const [isMuted, setIsMuted] = useState(false)
-  const [shuffle, setShuffle] = useState(false)
+  const[isMuted, setIsMuted] = useState(false)
+  const[shuffle, setShuffle] = useState(false)
   const[repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off")
   const[isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [lyrics, setLyrics] = useState<LyricsData | null>(null)
-  const [currentLyricIndex, setCurrentLyricIndex] = useState(-1)
-  const[audioUrl, setAudioUrl] = useState<string | null>(null)
+  const[lyrics, setLyrics] = useState<LyricsData | null>(null)
+  const[currentLyricIndex, setCurrentLyricIndex] = useState(-1)
   
-  const [activeTab, setActiveTab] = useState<'queue' | 'lyrics' | 'library' | 'explore' | 'artist'>('explore')
-  const [isMobilePlayerExpanded, setIsMobilePlayerExpanded] = useState(false)
-  const[mobilePlayerTab, setMobilePlayerTab] = useState<'player' | 'lyrics' | 'queue'>('player')
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  
+  // Tabs & Navigation
+  const[activeTab, setActiveTab] = useState<'queue' | 'lyrics' | 'library' | 'explore' | 'artist'>('explore')
+  
+  // Mobile Expanded Player States
+  const[isMobilePlayerExpanded, setIsMobilePlayerExpanded] = useState(false)
+  const [mobilePlayerTab, setMobilePlayerTab] = useState<'player' | 'lyrics' | 'queue'>('player')
 
-  // --- CRASH PROTECTED STATES ---
-  const [exploreData, setExploreData] = useState<{artists: any[], songs: Song[], albums: any[]}>({artists: [], songs: [], albums:[]})
-  const[isExploreLoading, setIsExploreLoading] = useState(true)
-  const [exploreError, setExploreError] = useState(false)
-  const [currentArtistData, setCurrentArtistData] = useState<any>(null)
-  const[isArtistLoading, setIsArtistLoading] = useState(false)
+  // Artist & Explore View States
+  const[exploreArtists, setExploreArtists] = useState<any[]>([])
+  const [isExploreLoading, setIsExploreLoading] = useState(true)
+  const[currentArtistData, setCurrentArtistData] = useState<any>(null)
+  const [isArtistLoading, setIsArtistLoading] = useState(false)
 
-  const[showAboutDialog, setShowAboutDialog] = useState(false)
-  const [showCreditsDialog, setShowCreditsDialog] = useState(false)
+  // Dialog States
+  const [showAboutDialog, setShowAboutDialog] = useState(false)
+  const[showCreditsDialog, setShowCreditsDialog] = useState(false)
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
-  const[showPlayerSettings, setShowPlayerSettings] = useState(false)
-  const [showPlaylistDialog, setShowPlaylistDialog] = useState(false)
+  const [showPlayerSettings, setShowPlayerSettings] = useState(false)
+  const[showPlaylistDialog, setShowPlaylistDialog] = useState(false)
   const [newPlaylistName, setNewPlaylistName] = useState("")
   
+  // Customization Settings
   const [dynamicTheme, setDynamicTheme] = useState(true)
-  const [swipeToChange, setSwipeToChange] = useState(true)
-  const [rotateLyricsBg, setRotateLyricsBg] = useState(true)
+  const[swipeToChange, setSwipeToChange] = useState(true)
+  const[rotateLyricsBg, setRotateLyricsBg] = useState(true)
   
-  const[showAuthDialog, setShowAuthDialog] = useState(false)
+  // Auth States
+  const [showAuthDialog, setShowAuthDialog] = useState(false)
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [isSignUp, setIsSignUp] = useState(false)
+  const[isSignUp, setIsSignUp] = useState(false)
   const [authError, setAuthError] = useState("")
-  const [displayNameInput, setDisplayNameInput] = useState("")
+  const[displayNameInput, setDisplayNameInput] = useState("")
   
-  const [likedSongs, setLikedSongs] = useState<Set<string>>(new Set())
-  const [savedSongs, setSavedSongs] = useState<Song[]>([])
+  // Data States
+  const[likedSongs, setLikedSongs] = useState<Set<string>>(new Set())
+  const[savedSongs, setSavedSongs] = useState<Song[]>([])
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [searchFocused, setSearchFocused] = useState(false)
 
@@ -153,6 +162,7 @@ export function AudioPlayer() {
 
   const currentSong = queue[currentIndex]
 
+  // --- FULLSCREEN LOGIC ---
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(err => console.error(err))
@@ -167,6 +177,7 @@ export function AudioPlayer() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   },[])
 
+  // --- INITIALIZATION ---
   useEffect(() => {
     try {
       const history = localStorage.getItem('ganvo_search_history')
@@ -174,23 +185,14 @@ export function AudioPlayer() {
     } catch (e) {}
 
     setIsExploreLoading(true)
-    setExploreError(false)
     fetch('/api/music/explore')
       .then(res => res.json())
-      .then(data => { 
-        if (data && !data.error && data.artists && data.songs && data.albums) {
-          setExploreData(data) 
-        } else {
-          setExploreError(true)
-        }
-      })
-      .catch((err) => {
-        console.error(err)
-        setExploreError(true)
-      })
+      .then(data => { if (data.artists) setExploreArtists(data.artists) })
+      .catch(console.error)
       .finally(() => setIsExploreLoading(false))
   },[])
 
+  // --- FIREBASE AUTH & FIRESTORE SYNC ---
   useEffect(() => {
     if (!auth || !db) return
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -207,7 +209,7 @@ export function AudioPlayer() {
           }
           if (data.playlists) setPlaylists(data.playlists)
         } else {
-          await setDoc(userRef, { savedSongs:[], playlists:[] })
+          await setDoc(userRef, { savedSongs: [], playlists:[] })
         }
       } else {
         const saved = localStorage.getItem('ganvo_saved_songs')
@@ -239,6 +241,7 @@ export function AudioPlayer() {
     }
   }
 
+  // --- AUTH METHODS ---
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setAuthError("")
@@ -254,7 +257,7 @@ export function AudioPlayer() {
       setPassword("")
     } catch (error: any) {
       if (error.code === 'auth/operation-not-allowed') {
-        setAuthError("Email/Password login is not enabled in Firebase Console.")
+        setAuthError("Email/Password login is not enabled. Go to Firebase Console -> Authentication -> Sign-in Method and enable 'Email/Password'.")
       } else if (error.code === 'auth/invalid-credential') {
         setAuthError("Incorrect email or password.")
       } else if (error.code === 'auth/email-already-in-use') {
@@ -273,7 +276,7 @@ export function AudioPlayer() {
       setShowAuthDialog(false)
     } catch (error: any) {
       if (error.code === 'auth/operation-not-allowed') {
-        setAuthError("Google login is not enabled in Firebase Console.")
+        setAuthError("Google login is not enabled. Go to Firebase Console -> Authentication -> Sign-in Method and enable 'Google'.")
       } else {
         setAuthError(error.message.replace("Firebase: ", ""))
       }
@@ -293,10 +296,11 @@ export function AudioPlayer() {
     }
   }
 
+  // --- PLAYLIST METHODS ---
   const handleCreatePlaylist = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPlaylistName.trim()) return
-    const newPlaylist: Playlist = { id: Date.now().toString(), name: newPlaylistName.trim(), songs: [] }
+    const newPlaylist: Playlist = { id: Date.now().toString(), name: newPlaylistName.trim(), songs:[] }
     const updatedPlaylists = [...playlists, newPlaylist]
     setPlaylists(updatedPlaylists)
     syncToCloud(savedSongs, updatedPlaylists)
@@ -308,7 +312,7 @@ export function AudioPlayer() {
     const updatedPlaylists = playlists.map(p => {
       if (p.id === playlistId) {
         if (!p.songs.find(s => s.videoId === song.videoId)) {
-          return { ...p, songs:[...p.songs, song] }
+          return { ...p, songs: [...p.songs, song] }
         }
       }
       return p
@@ -317,6 +321,7 @@ export function AudioPlayer() {
     syncToCloud(savedSongs, updatedPlaylists)
   }
 
+  // --- ARTIST VIEW LOGIC ---
   const loadArtistView = async (artistId: string) => {
     setIsArtistLoading(true)
     setActiveTab('artist')
@@ -324,23 +329,20 @@ export function AudioPlayer() {
     try {
       const res = await fetch(`/api/music/artist/${artistId}`)
       const data = await res.json()
-      if (data && !data.error) {
-        setCurrentArtistData(data)
-      } else {
-        setCurrentArtistData(null)
-      }
+      setCurrentArtistData(data)
     } catch (e) {
       console.error(e)
-      setCurrentArtistData(null)
     } finally {
       setIsArtistLoading(false)
     }
   }
 
+  // Toggle dark mode
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark)
   }, [isDark])
 
+  // Close search results when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
@@ -352,6 +354,7 @@ export function AudioPlayer() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   },[])
 
+  // Debounced auto-search while typing
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
 
@@ -362,6 +365,7 @@ export function AudioPlayer() {
     }
 
     setIsSearching(true)
+    
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const response = await fetch(`/api/music/search?q=${encodeURIComponent(searchQuery)}`)
@@ -379,6 +383,7 @@ export function AudioPlayer() {
     }
   }, [searchQuery])
 
+  // Add song to queue and play
   const addToQueueAndPlay = async (song: Song) => {
     const saveSearchStr = searchQuery || song.title
     if (saveSearchStr.trim()) {
@@ -404,32 +409,47 @@ export function AudioPlayer() {
     addToQueueAndPlay(song)
   }
 
+  // Load audio stream when song changes
   useEffect(() => {
     if (!currentSong) return
+
     const loadStream = async () => {
       setIsLoading(true)
       setAudioUrl(null)
       setLoadError(null)
+
       try {
         const response = await fetch(`/api/music/stream/${currentSong.videoId}`)
         const data = await response.json()
-        if (data.error) setLoadError(data.error)
-        else if (data.audioUrl) setAudioUrl(data.audioUrl)
-        else setLoadError("No audio stream available")
+
+        if (data.error) {
+          setLoadError(data.error)
+          return
+        }
+
+        if (data.audioUrl) {
+          setAudioUrl(data.audioUrl)
+        } else {
+          setLoadError("No audio stream available")
+        }
       } catch (error) {
         setLoadError("Network error. Please try again.")
       } finally {
         setIsLoading(false)
       }
     }
+
     loadStream()
   }, [currentSong?.videoId])
 
+  // Load lyrics
   useEffect(() => {
     if (!currentSong) return
+
     const loadLyrics = async () => {
       setLyrics(null)
       setCurrentLyricIndex(-1)
+
       try {
         const params = new URLSearchParams({
           track: currentSong.title,
@@ -439,14 +459,17 @@ export function AudioPlayer() {
         })
         const response = await fetch(`/api/lyrics?${params}`)
         const data = await response.json()
+
         if (data.syncedLyrics || data.plainLyrics) {
           setLyrics({ syncedLyrics: data.syncedLyrics, plainLyrics: data.plainLyrics })
         }
       } catch (error) {}
     }
-    loadLyrics()
-  }, [currentSong?.videoId])
 
+    loadLyrics()
+  },[currentSong?.videoId])
+
+  // Auto-play when audio URL is ready
   useEffect(() => {
     if (audioUrl && audioRef.current) {
       audioRef.current.src = audioUrl
@@ -458,6 +481,7 @@ export function AudioPlayer() {
     }
   },[audioUrl])
 
+  // Update lyrics scroll
   useEffect(() => {
     if (!lyrics?.syncedLyrics) return
     const lyric = lyrics.syncedLyrics.findLast((l) => l.time <= currentTime)
@@ -508,7 +532,7 @@ export function AudioPlayer() {
       return
     }
     setCurrentIndex(nextIndex)
-  }, [queue.length, currentIndex, shuffle, repeatMode])
+  },[queue.length, currentIndex, shuffle, repeatMode])
 
   const playPrevious = useCallback(() => {
     if (queue.length === 0) return
@@ -547,7 +571,7 @@ export function AudioPlayer() {
   const toggleLike = async (song: Song) => {
     setLikedSongs((prev) => {
       const next = new Set(prev)
-      let newSaved = [...savedSongs]
+      let newSaved =[...savedSongs]
       if (next.has(song.videoId)) {
         next.delete(song.videoId)
         newSaved = newSaved.filter(s => s.videoId !== song.videoId)
@@ -698,7 +722,7 @@ export function AudioPlayer() {
               {searchQuery.trim() !== "" && searchResults.length > 6 && (
                 <div className="flex-shrink-0 border-t bg-card/80 backdrop-blur-md p-2">
                   <Button variant="ghost" size="sm" onMouseDown={(e) => e.preventDefault()} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsSearchExpanded(!isSearchExpanded) }} className="w-full justify-center gap-2 rounded-lg hover:bg-primary/10 text-foreground transition-all duration-300 active:scale-[0.98]">
-                    {isSearchExpanded ? <><ChevronUp className="h-4 w-4 transition-transform duration-300" />Show less</> : <><ChevronDown className="h-4 w-4 transition-transform duration-300" />Show all {searchResults.length} results</>}
+                    {isSearchExpanded ? <><ChevronUp className="h-4 w-4 transition-transform duration-300 text-current" />Show less</> : <><ChevronDown className="h-4 w-4 transition-transform duration-300 text-current" />Show all {searchResults.length} results</>}
                   </Button>
                 </div>
               )}
@@ -752,7 +776,7 @@ export function AudioPlayer() {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium text-destructive focus:text-destructive transition-colors active:scale-[0.98]">
-                    <LogOut className="h-4 w-4" /> Sign Out
+                    <LogOut className="h-4 w-4 text-current" /> Sign Out
                   </DropdownMenuItem>
                 </>
               )}
@@ -778,70 +802,28 @@ export function AudioPlayer() {
                    <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                    <p className="font-bold text-lg text-muted-foreground">Discovering Music...</p>
                  </div>
-               ) : exploreError ? (
-                 <div className="flex flex-col items-center justify-center py-32 text-center">
-                    <TrendingUp className="h-16 w-16 text-muted-foreground/40 mb-6" />
-                    <p className="font-extrabold text-2xl mb-2 text-foreground">Explore Unavailable</p>
-                    <p className="text-sm font-medium text-muted-foreground max-w-[300px]">Servers are temporarily busy. Use the search bar to find music.</p>
-                 </div>
                ) : (
-                 <div className="space-y-12">
-                   {exploreData?.artists?.length > 0 && (
-                     <div>
-                       <h3 className="text-2xl font-bold mb-6 flex items-center gap-2"><Users className="h-6 w-6 text-primary"/> Top Artists</h3>
-                       <div className="flex overflow-x-auto pb-4 gap-6 snap-x no-scrollbar px-1">
-                          {exploreData.artists.map((artist, idx) => (
-                            <div key={artist.artistId || idx} onClick={() => loadArtistView(artist.artistId)} className="group flex flex-col items-center gap-4 cursor-pointer snap-start w-32 sm:w-40 shrink-0">
-                              <div className="relative w-full aspect-square rounded-full overflow-hidden shadow-lg transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-105 group-active:scale-95">
-                                <img src={artist.thumbnail || "/placeholder.svg"} alt={artist.name} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                              </div>
-                              <div className="text-center w-full px-2">
-                                <p className="font-bold text-sm truncate transition-colors group-hover:text-primary text-foreground">{artist.name}</p>
-                                <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">{artist.subscribers}</p>
-                              </div>
-                            </div>
-                          ))}
-                       </div>
-                     </div>
-                   )}
-                   {exploreData?.songs?.length > 0 && (
-                     <div>
-                       <h3 className="text-2xl font-bold mb-6 flex items-center gap-2"><TrendingUp className="h-6 w-6 text-primary"/> Top Songs</h3>
-                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                          {exploreData.songs.slice(0, 9).map((song, idx) => (
-                            <div key={idx} className="group flex items-center gap-4 p-3 rounded-2xl hover:bg-muted transition-colors duration-300 ease-out bg-card shadow-sm border">
-                              <img src={song.thumbnail} className="h-14 w-14 rounded-xl object-cover shadow-sm transition-transform duration-500 group-hover:scale-105" />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-bold text-sm truncate text-foreground">{song.title}</p>
-                                <p className="text-xs font-medium text-muted-foreground truncate mt-0.5">{song.artist}</p>
-                              </div>
-                              <Button variant="secondary" size="icon" onClick={() => addToQueueAndPlay(song)} className="rounded-full opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 active:scale-95 text-foreground h-10 w-10">
-                                <Play className="h-5 w-5 fill-current text-current translate-x-[1px]"/>
-                              </Button>
-                            </div>
-                          ))}
-                       </div>
-                     </div>
-                   )}
-                   {exploreData?.albums?.length > 0 && (
-                     <div>
-                       <h3 className="text-2xl font-bold mb-6 flex items-center gap-2"><Disc3 className="h-6 w-6 text-primary"/> Top Albums</h3>
-                       <div className="flex overflow-x-auto pb-4 gap-6 snap-x no-scrollbar px-1">
-                          {exploreData.albums.map((album, idx) => (
-                            <div key={idx} className="flex flex-col gap-3 w-40 sm:w-48 shrink-0 group cursor-pointer snap-start">
-                              <div className="overflow-hidden rounded-2xl shadow-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-105 group-active:scale-95 aspect-square relative">
-                                <img src={album.thumbnail} className="w-full h-full object-cover" />
-                              </div>
-                              <div>
-                                <p className="font-bold text-sm truncate text-foreground">{album.title}</p>
-                                <p className="text-xs font-medium text-muted-foreground mt-0.5">{album.artist} • {album.year}</p>
-                              </div>
-                            </div>
-                          ))}
-                       </div>
-                     </div>
-                   )}
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 md:gap-8">
+                    {exploreArtists.map((artist, idx) => (
+                      <div 
+                        key={artist.artistId || idx} 
+                        onClick={() => loadArtistView(artist.artistId)}
+                        className="group flex flex-col items-center gap-4 cursor-pointer"
+                        style={{ animationDelay: `${idx * 30}ms` }}
+                      >
+                        <div className="relative w-full aspect-square rounded-full overflow-hidden shadow-lg transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-105 group-active:scale-95">
+                          <img src={artist.thumbnail || "/placeholder.svg"} alt={artist.name} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <Play className="h-10 w-10 text-white fill-white drop-shadow-md" />
+                          </div>
+                        </div>
+                        <div className="text-center w-full px-2">
+                          <p className="font-bold text-base truncate transition-colors group-hover:text-primary text-foreground">{artist.name}</p>
+                          <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">{artist.subscribers}</p>
+                        </div>
+                      </div>
+                    ))}
                  </div>
                )}
              </div>
@@ -858,10 +840,10 @@ export function AudioPlayer() {
                   </div>
                 ) : currentArtistData ? (
                   <div className="animate-in fade-in duration-500">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 mb-12 p-4 md:p-8 bg-card/50 rounded-[2.5rem] border shadow-sm backdrop-blur-sm">
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 mb-12 p-2 md:p-8">
                       <img src={currentArtistData.thumbnails?.[currentArtistData.thumbnails.length-1]?.url || "/placeholder.svg"} alt={currentArtistData.name} className="w-48 h-48 md:w-56 md:h-56 rounded-full object-cover shadow-xl" />
                       <div className="text-center md:text-left flex-1 flex flex-col justify-center">
-                        <div className="flex items-center justify-center md:justify-start gap-2 text-primary font-bold text-sm mb-2 uppercase tracking-widest"><MicVocal className="h-4 w-4 text-current"/> Artist</div>
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-primary font-bold text-sm mb-2 uppercase tracking-widest"><MicVocal className="h-4 w-4"/> Artist</div>
                         <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-2">{currentArtistData.name}</h1>
                         <p className="text-muted-foreground font-semibold mb-4 text-lg">{currentArtistData.subscribers}</p>
                         <p className="text-sm leading-relaxed max-w-3xl text-muted-foreground/90 line-clamp-3 md:line-clamp-none">{currentArtistData.description}</p>
@@ -869,7 +851,7 @@ export function AudioPlayer() {
                     </div>
                     
                     <h3 className="text-2xl font-bold mb-4 md:mb-6 flex items-center gap-2"><TrendingUp className="h-6 w-6 text-primary"/> Top Songs</h3>
-                    <div className="space-y-1 md:space-y-2 mb-12 bg-card p-4 rounded-[2rem] border shadow-sm">
+                    <div className="space-y-1 md:space-y-2 mb-12">
                       {currentArtistData.topSongs?.map((song: any, idx: number) => (
                         <div key={song.videoId} className="group flex items-center gap-3 md:gap-4 p-2 md:p-3 rounded-2xl hover:bg-muted transition-colors duration-300 ease-out">
                           <span className="w-6 text-center font-bold text-muted-foreground/50">{idx + 1}</span>
@@ -942,6 +924,7 @@ export function AudioPlayer() {
                       "aspect-square w-full max-w-[320px] mx-auto overflow-hidden relative transition-all duration-700 ease-out shadow-2xl mb-8",
                       dynamicTheme ? "rounded-[2rem]" : "rounded-2xl",
                       isPlaying && "scale-[1.02] shadow-[0_20px_50px_rgba(0,0,0,0.3)]",
+                      // On mobile, if we are in this view but they tapped lyrics/library, we'd normally hide it. 
                       (activeTab === 'lyrics' || activeTab === 'library') && "hidden lg:block"
                     )}
                   >
@@ -980,7 +963,7 @@ export function AudioPlayer() {
                       max={duration || 100}
                       step={0.1}
                       onValueChange={handleSeek}
-                      className="mb-3 cursor-grab active:cursor-grabbing[&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:transition-transform [&_[data-slot=thumb]]:duration-300 [&_[data-slot=thumb]]:ease-out [&_[data-slot=thumb]]:h-4 [&_[data-slot=thumb]]:w-4 [&_[data-slot=thumb]]:border-2[&_[data-slot=thumb]]:hover:scale-150 [&_[data-slot=track]]:h-2 [&_[data-slot=track]]:bg-muted"
+                      className="mb-3 cursor-grab active:cursor-grabbing [&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:transition-transform [&_[data-slot=thumb]]:duration-300 [&_[data-slot=thumb]]:ease-out [&_[data-slot=thumb]]:h-4 [&_[data-slot=thumb]]:w-4 [&_[data-slot=thumb]]:border-2 [&_[data-slot=thumb]]:hover:scale-150 [&_[data-slot=track]]:h-2 [&_[data-slot=track]]:bg-muted"
                     />
                     <div className="flex justify-between text-xs font-bold tabular-nums text-muted-foreground/70">
                       <span>{formatTime(currentTime)}</span>
@@ -1158,112 +1141,6 @@ export function AudioPlayer() {
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* --- EXPANDABLE MOBILE PLAYER OVERLAY --- */}
-      <div 
-        className={cn(
-          "fixed inset-0 z-[200] bg-background/95 backdrop-blur-3xl flex flex-col transition-transform duration-400 ease-out lg:hidden",
-          isMobilePlayerExpanded ? "translate-y-0" : "translate-y-full"
-        )}
-      >
-        <div className="flex items-center justify-between p-4">
-          <Button variant="ghost" size="icon" onClick={() => setIsMobilePlayerExpanded(false)} className="h-12 w-12 rounded-full hover:bg-muted active:scale-90 text-foreground">
-            <ChevronDown className="h-8 w-8 text-current" />
-          </Button>
-          <div className="flex bg-muted/50 rounded-full p-1 gap-1">
-            <Button variant={mobilePlayerTab === 'player' ? 'default' : 'ghost'} size="sm" onClick={() => setMobilePlayerTab('player')} className="rounded-full px-4 font-bold text-xs text-foreground">Player</Button>
-            <Button variant={mobilePlayerTab === 'lyrics' ? 'default' : 'ghost'} size="sm" onClick={() => setMobilePlayerTab('lyrics')} className="rounded-full px-4 font-bold text-xs text-foreground">Lyrics</Button>
-            <Button variant={mobilePlayerTab === 'queue' ? 'default' : 'ghost'} size="sm" onClick={() => setMobilePlayerTab('queue')} className="rounded-full px-4 font-bold text-xs text-foreground">Queue</Button>
-          </div>
-          <Button variant="ghost" size="icon" onClick={() => setShowPlayerSettings(true)} className="h-12 w-12 rounded-full hover:bg-muted active:scale-90 text-foreground">
-            <MoreVertical className="h-6 w-6 text-current" />
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto min-h-0 relative px-6 pb-6 pt-4 flex flex-col">
-          {mobilePlayerTab === 'player' && currentSong && (
-            <div className="flex flex-col items-center h-full animate-in fade-in zoom-in-95 duration-500 flex-1 justify-center">
-              {/* Responsive Square Album Art */}
-              <div className="aspect-square w-full max-w-[320px] mx-auto overflow-hidden rounded-[2rem] shadow-2xl relative mb-8">
-                 <img src={currentSong.thumbnail} className={cn("w-full h-full object-cover transition-transform duration-[2s]", isPlaying ? "scale-105" : "scale-100")} />
-                 {isLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md">
-                      <Loader2 className="h-12 w-12 animate-spin text-white mb-2" />
-                    </div>
-                  )}
-              </div>
-              
-              <div className="w-full flex items-center justify-between gap-4 mb-6">
-                 <div className="flex-1 min-w-0">
-                    <h2 className="text-3xl font-extrabold truncate text-foreground mb-1">{currentSong.title}</h2>
-                    <p className="text-lg font-semibold text-muted-foreground truncate">{currentSong.artist}</p>
-                 </div>
-                 <Button variant="ghost" size="icon" onClick={() => toggleLike(currentSong)} className="h-14 w-14 rounded-full text-foreground hover:bg-[var(--google-red)]/10">
-                    <Heart className={cn("h-8 w-8 transition-all", likedSongs.has(currentSong.videoId) ? "fill-[var(--google-red)] text-[var(--google-red)] scale-110" : "text-current")} />
-                 </Button>
-              </div>
-
-              <div className="w-full mb-8">
-                <Slider value={[currentTime]} max={duration || 100} step={0.1} onValueChange={handleSeek} className="mb-4 [&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:h-5 [&_[data-slot=thumb]]:w-5 [&_[data-slot=track]]:h-2" />
-                <div className="flex justify-between text-sm font-bold text-muted-foreground">
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{formatTime(duration)}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between w-full mb-8 px-2">
-                <Button variant="ghost" size="icon" onClick={() => setShuffle(!shuffle)} className={cn("h-12 w-12 rounded-full flex items-center justify-center", shuffle ? "bg-primary/20 text-primary" : "text-foreground")}><Shuffle className="h-6 w-6 text-current" /></Button>
-                <Button variant="ghost" size="icon" onClick={playPrevious} className="h-16 w-16 rounded-full text-foreground flex items-center justify-center"><SkipBack className="h-8 w-8 fill-current text-current" /></Button>
-                <Button onClick={togglePlay} className="h-20 w-20 rounded-[2rem] bg-primary text-primary-foreground shadow-xl hover:scale-105 transition-transform active:scale-95 flex items-center justify-center">
-                   {isPlaying ? <Pause className="h-8 w-8 fill-primary-foreground text-primary-foreground" /> : <Play className="h-8 w-8 fill-primary-foreground text-primary-foreground translate-x-[2px]" />}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={playNext} className="h-16 w-16 rounded-full text-foreground flex items-center justify-center"><SkipForward className="h-8 w-8 fill-current text-current" /></Button>
-                <Button variant="ghost" size="icon" onClick={() => setRepeatMode(repeatMode === "off" ? "all" : repeatMode === "all" ? "one" : "off")} className={cn("h-12 w-12 rounded-full flex items-center justify-center", repeatMode !== "off" ? "bg-primary/20 text-primary" : "text-foreground")}>
-                  {repeatMode === "one" ? <Repeat1 className="h-6 w-6 text-current" /> : <Repeat className="h-6 w-6 text-current" />}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {mobilePlayerTab === 'lyrics' && (
-             <div className="h-full overflow-y-auto no-scrollbar scroll-smooth lyrics-scroll-container pb-32">
-                {lyrics?.syncedLyrics ? (
-                  <div className="space-y-6 py-10">
-                    {lyrics.syncedLyrics.map((line, index) => (
-                      <p key={index} onClick={() => { if (audioRef.current) audioRef.current.currentTime = line.time }} className={cn("lyric-line transition-all duration-500 ease-out cursor-pointer rounded-2xl px-4 py-3 text-xl font-bold leading-tight text-center", index === currentLyricIndex ? "lyric-active-line scale-[1.05] bg-primary/10 text-primary shadow-sm" : index < currentLyricIndex ? "text-muted-foreground/30 scale-95" : "text-muted-foreground/70 hover:bg-muted hover:text-foreground scale-95")}>
-                        {line.text}
-                      </p>
-                    ))}
-                  </div>
-                ) : lyrics?.plainLyrics ? (
-                  <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground font-semibold text-lg text-center animate-in fade-in duration-500 py-10 px-2">{lyrics.plainLyrics}</p>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full"><Mic2 className="h-16 w-16 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-2xl mb-2 text-foreground">No lyrics found</p></div>
-                )}
-             </div>
-          )}
-
-          {mobilePlayerTab === 'queue' && (
-             <div className="h-full overflow-y-auto pb-32">
-                <h3 className="font-extrabold text-2xl mb-6 flex items-center gap-3 text-foreground"><ListMusic className="text-primary"/> Up Next</h3>
-                <div className="space-y-3">
-                  {queue.map((song, index) => (
-                    <div key={`${song.videoId}-${index}`} className={cn("group flex items-center gap-4 rounded-2xl p-3 transition-all duration-300", index === currentIndex ? "bg-primary/10 shadow-sm border border-primary/20" : "hover:bg-muted/80")}>
-                      <button onClick={() => setCurrentIndex(index)} className="flex flex-1 items-center gap-4 text-left outline-none min-w-0">
-                        <img src={song.thumbnail} className="h-16 w-16 aspect-square rounded-xl object-cover shadow-sm flex-shrink-0" />
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <p className={cn("truncate text-base font-bold", index === currentIndex ? "text-primary" : "text-foreground")}>{song.title}</p>
-                          <p className="truncate text-sm font-semibold text-muted-foreground mt-0.5">{song.artist}</p>
-                        </div>
-                      </button>
-                      <Button variant="ghost" size="icon" onClick={() => removeFromQueue(index)} className="h-12 w-12 rounded-full text-destructive bg-destructive/10"><X className="h-5 w-5 text-current" /></Button>
-                    </div>
-                  ))}
-                </div>
-             </div>
-          )}
         </div>
       </div>
 
