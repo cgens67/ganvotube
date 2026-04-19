@@ -29,9 +29,9 @@ export async function GET() {
     
     const artists = uniqueArtists.slice(0, 30).map((artist) => {
       let thumbUrl = artist.thumbnails?.[artist.thumbnails.length - 1]?.url || ''
-      // Force high-res images
+      // Force high-res images with perfect square crop (-c)
       if (thumbUrl.includes('=w') || thumbUrl.includes('-w')) {
-        thumbUrl = thumbUrl.replace(/([=-]w)\d+([=-]h)\d+/, '$1800$2800')
+        thumbUrl = thumbUrl.replace(/([=-]w)\d+([=-]h)\d+.*/, '$1800$2800-c')
       }
       return {
         artistId: artist.artistId,
