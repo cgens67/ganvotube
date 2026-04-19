@@ -38,7 +38,7 @@ import {
   Search, Shuffle, Repeat, Repeat1, Sun, Moon, Loader2, Music2,
   X, ListMusic, Mic2, MoreVertical, Info, Heart, ChevronDown,
   ChevronUp, ExternalLink, History, Library, UserCircle2, LogOut,
-  Maximize, Minimize, Settings, TrendingUp, ListPlus, Users
+  Maximize, Minimize, Settings, TrendingUp, ListPlus
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -52,10 +52,11 @@ const firebaseConfig = {
   appId: "1:1083596663051:web:52900f44e84034b7421a0e"
 };
 
+// Safely initialize Firebase for Vercel Next.js SSR
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+const auth = typeof window !== "undefined" ? getAuth(app) : null;
+const db = typeof window !== "undefined" ? getFirestore(app) : null;
+const googleProvider = typeof window !== "undefined" ? new GoogleAuthProvider() : null;
 
 // --- INTERFACES ---
 interface Song {
@@ -86,20 +87,20 @@ interface LyricsData {
 
 export function AudioPlayer() {
   // UI & Player States
-  const [isDark, setIsDark] = useState(false)
+  const[isDark, setIsDark] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Song[]>([])
-  const[isSearching, setIsSearching] = useState(false)
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const[isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [searchHistory, setSearchHistory] = useState<string[]>([])
   const [queue, setQueue] = useState<Song[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const[isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
+  const[currentIndex, setCurrentIndex] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const[currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(80)
-  const [isMuted, setIsMuted] = useState(false)
+  const[isMuted, setIsMuted] = useState(false)
   const [shuffle, setShuffle] = useState(false)
   const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off")
   const [isLoading, setIsLoading] = useState(false)
@@ -107,23 +108,26 @@ export function AudioPlayer() {
   const [lyrics, setLyrics] = useState<LyricsData | null>(null)
   const [currentLyricIndex, setCurrentLyricIndex] = useState(-1)
   
+  // RESTORED MISSING VARIABLES FOR VERCEL BUILD
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  
   // Tabs & Navigation
   const [activeTab, setActiveTab] = useState<'queue' | 'lyrics' | 'library' | 'explore' | 'artist'>('explore')
   
   // Artist View States
-  const[exploreArtists, setExploreArtists] = useState<any[]>([])
-  const [currentArtistData, setCurrentArtistData] = useState<any>(null)
+  const [exploreArtists, setExploreArtists] = useState<any[]>([])
+  const[currentArtistData, setCurrentArtistData] = useState<any>(null)
   const [isArtistLoading, setIsArtistLoading] = useState(false)
 
   // Dialog States
   const [showAboutDialog, setShowAboutDialog] = useState(false)
-  const[showCreditsDialog, setShowCreditsDialog] = useState(false)
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false)
-  const[showPlaylistDialog, setShowPlaylistDialog] = useState(false)
+  const [showCreditsDialog, setShowCreditsDialog] = useState(false)
+  const[showSettingsDialog, setShowSettingsDialog] = useState(false)
+  const [showPlaylistDialog, setShowPlaylistDialog] = useState(false)
   const [newPlaylistName, setNewPlaylistName] = useState("")
   
   // Auth States
-  const [showAuthDialog, setShowAuthDialog] = useState(false)
+  const[showAuthDialog, setShowAuthDialog] = useState(false)
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [email, setEmail] = useState("")
   const[password, setPassword] = useState("")
@@ -133,8 +137,8 @@ export function AudioPlayer() {
   
   // Data States
   const [likedSongs, setLikedSongs] = useState<Set<string>>(new Set())
-  const[savedSongs, setSavedSongs] = useState<Song[]>([])
-  const [playlists, setPlaylists] = useState<Playlist[]>([])
+  const [savedSongs, setSavedSongs] = useState<Song[]>([])
+  const[playlists, setPlaylists] = useState<Playlist[]>([])
   
   const [searchFocused, setSearchFocused] = useState(false)
 
@@ -302,9 +306,9 @@ export function AudioPlayer() {
     const newPlaylist: Playlist = {
       id: Date.now().toString(),
       name: newPlaylistName.trim(),
-      songs:[]
+      songs: []
     }
-    const updatedPlaylists = [...playlists, newPlaylist]
+    const updatedPlaylists =[...playlists, newPlaylist]
     setPlaylists(updatedPlaylists)
     syncToCloud(savedSongs, updatedPlaylists)
     setNewPlaylistName("")
@@ -409,6 +413,11 @@ export function AudioPlayer() {
     setSearchFocused(false)
   }
 
+  // Play a song from the library immediately
+  const playFromLibrary = (song: Song) => {
+    addToQueueAndPlay(song)
+  }
+
   // Load audio stream when song changes
   useEffect(() => {
     if (!currentSong) return
@@ -440,7 +449,7 @@ export function AudioPlayer() {
     }
 
     loadStream()
-  },[currentSong?.videoId])
+  }, [currentSong?.videoId])
 
   // Load lyrics
   useEffect(() => {
@@ -479,7 +488,7 @@ export function AudioPlayer() {
         setLoadError("Playback failed. Try another song.")
       })
     }
-  }, [audioUrl])
+  },[audioUrl])
 
   // Update lyrics scroll
   useEffect(() => {
@@ -500,7 +509,7 @@ export function AudioPlayer() {
         }
       }
     }
-  }, [currentTime, lyrics, currentLyricIndex])
+  },[currentTime, lyrics, currentLyricIndex])
 
   const handleTimeUpdate = () => { if (audioRef.current) setCurrentTime(audioRef.current.currentTime) }
   const handleLoadedMetadata = () => { if (audioRef.current) setDuration(audioRef.current.duration) }
@@ -855,11 +864,6 @@ export function AudioPlayer() {
                         <span className="text-sm font-semibold text-white/90 tracking-wide">Loading Stream...</span>
                       </div>
                     )}
-                    {loadError && !isLoading && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-[2rem] bg-black/70 p-6 text-center backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
-                        <span className="text-sm font-medium text-white/90">{loadError}</span>
-                      </div>
-                    )}
                   </div>
 
                   {/* Mobile Overlays for Lyrics/Library */}
@@ -940,7 +944,7 @@ export function AudioPlayer() {
                       max={duration || 100}
                       step={0.1}
                       onValueChange={handleSeek}
-                      className="mb-3 cursor-grab active:cursor-grabbing [&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:transition-transform [&_[data-slot=thumb]]:duration-300 [&_[data-slot=thumb]]:ease-[cubic-bezier(0.2,0,0,1)] [&_[data-slot=thumb]]:h-4 [&_[data-slot=thumb]]:w-4 [&_[data-slot=thumb]]:border-2 [&_[data-slot=thumb]]:hover:scale-150 [&_[data-slot=track]]:h-2 [&_[data-slot=track]]:bg-muted"
+                      className="mb-3 cursor-grab active:cursor-grabbing [&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:transition-transform [&_[data-slot=thumb]]:duration-200 [&_[data-slot=thumb]]:h-4 [&_[data-slot=thumb]]:w-4 [&_[data-slot=thumb]]:border-2 [&_[data-slot=thumb]]:hover:scale-150 [&_[data-slot=track]]:h-2 [&_[data-slot=track]]:bg-muted"
                     />
                     <div className="flex justify-between text-xs font-bold tabular-nums text-muted-foreground/70">
                       <span>{formatTime(currentTime)}</span>
@@ -976,7 +980,7 @@ export function AudioPlayer() {
               ) : (
                 <div className="flex flex-col items-center px-4 text-center animate-in fade-in zoom-in-95 duration-700 ease-[cubic-bezier(0.2,0,0,1)]">
                   <div className="mb-8 flex h-40 w-40 items-center justify-center rounded-[2.5rem] bg-muted/50 shadow-inner transition-all duration-700 hover:scale-105">
-                    <Music2 className="h-20 w-20 text-muted-foreground/40" />
+                    <Music2 className="h-20 w-20 text-muted-foreground/40 transition-transform duration-700" />
                   </div>
                   <h2 className="mb-3 text-3xl font-extrabold tracking-tight transition-colors">Start Listening</h2>
                   <p className="max-w-xs text-base font-medium text-muted-foreground/80 leading-relaxed transition-colors">
