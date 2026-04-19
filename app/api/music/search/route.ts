@@ -23,15 +23,24 @@ export async function GET(request: NextRequest) {
     await ensureInitialized()
     const results = await ytmusic.searchSongs(query)
     
-    const songs = results.slice(0, 20).map((song) => ({
-      videoId: song.videoId,
-      title: song.name,
-      artist: song.artist?.name || 'Unknown Artist',
-      album: song.album?.name || '',
-      duration: song.duration || 0,
-      // Pick the last thumbnail (highest resolution) to prevent mosaic/bad quality
-      thumbnail: song.thumbnails?.[song.thumbnails.length - 1]?.url || '',
-    }))
+    const songs = results.slice(0, 20).map((song) => {
+      // Grab the best available thumbnail
+      let thumbUrl = song.thumbnails?.[song.thumbnails.length - 1]?.url || ''
+      
+      // Force YouTube's image server to return the absolute maximum quality (1200x1200px)
+      if (thumbUrl.includes('=w') || thumbUrl.includes('-w')) {
+        thumbUrl = thumbUrl.replace(/([=-]w)\d+([=-]h)\d+/, '$11200$21200')
+      }
+
+      return {
+        videoId: song.videoId,
+        title: song.name,
+        artist: song.artist?.name || 'Unknown Artist',
+        album: song.album?.name || '',
+        duration: song.duration || 0,
+        thumbnail: thumbUrl,
+      }
+    })
 
     return NextResponse.json({ results: songs })
   } catch (error) {
