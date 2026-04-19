@@ -27,7 +27,7 @@ export async function GET() {
     await ensureInitialized()
     
     // Fetch multiple categories concurrently for a rich Explore page
-    const [artistsRes, songsRes, albumsRes] = await Promise.all([
+    const[artistsRes, songsRes, albumsRes] = await Promise.all([
       ytmusic.searchArtists("Top Global Artists"),
       ytmusic.searchSongs("Top Global Hits"),
       ytmusic.searchAlbums("Top Albums 2024")
