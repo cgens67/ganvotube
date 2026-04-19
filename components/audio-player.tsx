@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
@@ -95,80 +96,79 @@ interface LyricsData {
 }
 
 export function AudioPlayer() {
-  const [isDark, setIsDark] = useState(false)
-  const[isFullscreen, setIsFullscreen] = useState(false)
+  const[isDark, setIsDark] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const[searchSort, setSearchSort] = useState<'relevance'|'latest'|'views'>('relevance')
-  const [searchResults, setSearchResults] = useState<Song[]>([])
-  const[isSearching, setIsSearching] = useState(false)
+  const [searchSort, setSearchSort] = useState<'relevance'|'latest'|'views'>('relevance')
+  const[searchResults, setSearchResults] = useState<Song[]>([])
+  const [isSearching, setIsSearching] = useState(false)
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
-  const [searchHistory, setSearchHistory] = useState<string[]>([])
+  const[searchHistory, setSearchHistory] = useState<string[]>([])
   
-  const[queue, setQueue] = useState<Song[]>([])
+  const [queue, setQueue] = useState<Song[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const[volume, setVolume] = useState(80)
+  const[duration, setDuration] = useState(0)
+  const [volume, setVolume] = useState(80)
   const [isMuted, setIsMuted] = useState(false)
-  const [shuffle, setShuffle] = useState(false)
-  const[repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off")
+  const[shuffle, setShuffle] = useState(false)
+  const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off")
   
-  const[isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [lyrics, setLyrics] = useState<LyricsData | null>(null)
+  const[lyrics, setLyrics] = useState<LyricsData | null>(null)
   const [currentLyricIndex, setCurrentLyricIndex] = useState(-1)
-  const[audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
   
   // Audio Effects
-  const[playbackRate, setPlaybackRate] = useState(1)
+  const [playbackRate, setPlaybackRate] = useState(1)
   const [preservesPitch, setPreservesPitch] = useState(true)
-  const [showEffectsDialog, setShowEffectsDialog] = useState(false)
+  const[showEffectsDialog, setShowEffectsDialog] = useState(false)
 
   // Navigation
-  const[activeTab, setActiveTab] = useState<'queue' | 'lyrics' | 'library' | 'explore' | 'artist' | 'playlist'>('explore')
+  const [activeTab, setActiveTab] = useState<'queue' | 'lyrics' | 'library' | 'explore' | 'artist' | 'playlist'>('explore')
   const [isMobilePlayerExpanded, setIsMobilePlayerExpanded] = useState(false)
-  const [mobilePlayerTab, setMobilePlayerTab] = useState<'player' | 'lyrics' | 'queue' | 'library'>('player')
+  const[mobilePlayerTab, setMobilePlayerTab] = useState<'player' | 'lyrics' | 'queue'>('player')
 
   // Views Data
-  const[exploreData, setExploreData] = useState<{artists: any[], songs: Song[], albums: any[]}>({artists: [], songs: [], albums:[]})
+  const [exploreData, setExploreData] = useState<{artists: any[], songs: Song[], albums: any[]}>({artists: [], songs: [], albums:[]})
   const [isExploreLoading, setIsExploreLoading] = useState(true)
   const [exploreError, setExploreError] = useState(false)
   const[currentArtistData, setCurrentArtistData] = useState<any>(null)
   const [isArtistLoading, setIsArtistLoading] = useState(false)
   const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null)
 
-  // Dialogs
+  // Dialog States
   const [showAboutDialog, setShowAboutDialog] = useState(false)
   const[showCreditsDialog, setShowCreditsDialog] = useState(false)
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false) 
+  const [showAccountSettings, setShowAccountSettings] = useState(false) 
   const [showPlayerSettings, setShowPlayerSettings] = useState(false) 
-  const [showPlaylistDialog, setShowPlaylistDialog] = useState(false)
-  const[newPlaylistName, setNewPlaylistName] = useState("")
+  const[showPlaylistDialog, setShowPlaylistDialog] = useState(false)
+  const [newPlaylistName, setNewPlaylistName] = useState("")
   
   // Customization
   const [dynamicTheme, setDynamicTheme] = useState(true)
-  const [playerBgStyle, setPlayerBgStyle] = useState<'Theme' | 'Gradient' | 'Blur'>('Theme')
-  const [lyricsProvider, setLyricsProvider] = useState<'LrcLib' | 'KuGou' | 'Both'>('LrcLib')
-  const[thumbnailRadius, setThumbnailRadius] = useState(32)
-  const [dominantColor, setDominantColor] = useState<string | null>(null)
+  const[playerBgStyle, setPlayerBgStyle] = useState<'Theme' | 'Gradient' | 'Blur'>('Theme')
+  const[lyricsProvider, setLyricsProvider] = useState<'LrcLib' | 'KuGou' | 'Both'>('LrcLib')
+  const [thumbnailRadius, setThumbnailRadius] = useState(32)
+  const[dominantColor, setDominantColor] = useState<string | null>(null)
   
   // Auth
-  const [showAuthDialog, setShowAuthDialog] = useState(false)
+  const[showAuthDialog, setShowAuthDialog] = useState(false)
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const[isSignUp, setIsSignUp] = useState(false)
-  const [authError, setAuthError] = useState("")
-  const[displayNameInput, setDisplayNameInput] = useState("")
+  const[password, setPassword] = useState("")
+  const [isSignUp, setIsSignUp] = useState(false)
+  const[authError, setAuthError] = useState("")
+  const [displayNameInput, setDisplayNameInput] = useState("")
   
   // Data States
-  const[likedSongs, setLikedSongs] = useState<Set<string>>(new Set())
+  const [likedSongs, setLikedSongs] = useState<Set<string>>(new Set())
   const [savedSongs, setSavedSongs] = useState<Song[]>([])
-  const [playlists, setPlaylists] = useState<Playlist[]>([])
+  const[playlists, setPlaylists] = useState<Playlist[]>([])
   const [searchFocused, setSearchFocused] = useState(false)
 
-  // --- RESTORED MISSING REFS (This fixes the Vercel crash) ---
   const audioRef = useRef<HTMLAudioElement>(null)
   const lyricsContainerRef = useRef<HTMLDivElement>(null)
   const lyricsContainerRefMobile = useRef<HTMLDivElement>(null)
@@ -179,7 +179,7 @@ export function AudioPlayer() {
 
   // Color Extractor for Gradient
   useEffect(() => {
-    if (!currentSong?.thumbnail || playerBgStyle === 'Theme') {
+    if (!currentSong?.thumbnail || playerBgStyle !== 'Gradient') {
       setDominantColor(null)
       return
     }
@@ -328,7 +328,7 @@ export function AudioPlayer() {
       try {
         await updateProfile(auth.currentUser, { displayName: displayNameInput })
         setUser({ ...auth.currentUser }) 
-        setShowSettingsDialog(false)
+        setShowAccountSettings(false)
       } catch (e) { console.error(e) }
     }
   }
@@ -396,6 +396,7 @@ export function AudioPlayer() {
         
         let results = data.results ||[]
         if (searchSort === 'latest') results = results.reverse()
+        // 'views' sorting would require full video data which search API doesn't provide, simulating by shuffling for demo
         if (searchSort === 'views') results = results.sort(() => Math.random() - 0.5)
 
         setSearchResults(results)
@@ -463,9 +464,9 @@ export function AudioPlayer() {
       finally { setIsLoading(false) }
     }
     loadStream()
-  },[currentSong?.videoId])
+  }, [currentSong?.videoId])
 
-  // Lyrics Fetcher
+  // Lyrics Fetcher (Simulating Provider choice logic for UI)
   useEffect(() => {
     if (!currentSong) return
     const loadLyrics = async () => {
@@ -483,18 +484,19 @@ export function AudioPlayer() {
         if (data.syncedLyrics || data.plainLyrics) {
           setLyrics({ syncedLyrics: data.syncedLyrics, plainLyrics: data.plainLyrics })
         } else if (lyricsProvider === 'Both' || lyricsProvider === 'KuGou') {
+          // Simulate Fallback to KuGou message if enabled but fails
           setLyrics({ syncedLyrics: null, plainLyrics: "Couldn't find timed lyrics using LrcLib or KuGou." })
         }
       } catch (error) {}
     }
     loadLyrics()
-  },[currentSong?.videoId, lyricsProvider])
+  }, [currentSong?.videoId, lyricsProvider])
 
-  // Auto-play when audio URL is ready
   useEffect(() => {
     if (audioUrl && audioRef.current) {
       audioRef.current.src = audioUrl
       audioRef.current.load()
+      // Re-apply effects
       audioRef.current.playbackRate = playbackRate
       // @ts-ignore
       audioRef.current.preservesPitch = preservesPitch
@@ -506,7 +508,6 @@ export function AudioPlayer() {
     }
   },[audioUrl])
 
-  // Update lyrics scroll
   useEffect(() => {
     if (!lyrics?.syncedLyrics) return
     const lyric = lyrics.syncedLyrics.findLast((l) => l.time <= currentTime)
@@ -661,7 +662,7 @@ export function AudioPlayer() {
       )}
       {dynamicTheme && playerBgStyle === 'Blur' && currentSong && (
         <div className="absolute inset-0 z-[-1] overflow-hidden">
-          <img src={currentSong.thumbnail} className="w-full h-full object-cover blur-[80px] opacity-30 transition-all duration-1000" />
+          <img src={currentSong.thumbnail} className="w-full h-full object-cover blur-[100px] opacity-30 transition-all duration-1000" />
         </div>
       )}
 
@@ -680,8 +681,8 @@ export function AudioPlayer() {
           "flex items-center shrink-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left overflow-hidden min-w-fit", 
           searchFocused ? "w-0 opacity-0 md:w-auto md:opacity-100 gap-0 md:gap-3" : "w-auto opacity-100 gap-3"
         )}>
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-110 hover:rotate-3 shadow-md">
-            <Music2 className="h-5 w-5 text-primary-foreground fill-current" />
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-foreground transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-110 hover:rotate-3 shadow-md">
+            <Music2 className="h-5 w-5 text-background fill-current" />
           </div>
           <div className="hidden sm:flex items-baseline gap-1">
             <span className="text-xl font-normal text-muted-foreground tracking-tight">Ganvo</span>
@@ -1101,16 +1102,14 @@ export function AudioPlayer() {
                   <p>Failed to load artist.</p>
                 )}
              </div>
-          )}
-
-          {activeTab === 'playlist' && activePlaylist && (
+          ) : activeTab === 'playlist' && activePlaylist ? (
             /* Specific Playlist View */
             <div className="p-4 md:p-10 max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-right-8 duration-700 ease-out">
                 <Button variant="ghost" onClick={() => setActiveTab('library')} className="mb-6 -ml-2 md:-ml-4 gap-2 font-bold text-muted-foreground hover:text-foreground transition-all text-foreground">
                   <SkipBack className="h-4 w-4 fill-current text-current" /> Back to Library
                 </Button>
                 <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 mb-12 p-4 md:p-8 bg-card/50 rounded-[2.5rem] border shadow-sm backdrop-blur-sm">
-                  <div className="aspect-square w-48 h-48 md:w-56 md:h-56 rounded-3xl bg-primary/10 text-primary flex items-center justify-center shadow-xl">
+                  <div className="w-48 h-48 md:w-56 md:h-56 rounded-3xl bg-primary/10 text-primary flex items-center justify-center shadow-xl">
                     <ListMusic className="h-20 w-20 text-current" />
                   </div>
                   <div className="text-center md:text-left flex-1 flex flex-col justify-center min-w-0">
@@ -1150,13 +1149,17 @@ export function AudioPlayer() {
                   )}
                 </div>
             </div>
+          ) : (
+            <div className="p-3 space-y-2 pb-32 animate-in slide-in-from-bottom-8 duration-700 ease-out">
+               <div className="flex flex-col items-center justify-center py-24 text-center"><ListMusic className="h-10 w-10 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-xl mb-2 text-foreground">Select a View</p></div>
+            </div>
           )}
         </div>
 
         {/* Desktop Sidebar - Queue, Lyrics, Library */}
         <div className="hidden w-80 flex-col border-l border-border/40 bg-card/40 backdrop-blur-2xl lg:flex xl:w-[420px] overflow-hidden min-h-0 shadow-[-10px_0_30px_rgba(0,0,0,0.03)] z-20 transition-all duration-500">
           <div className="flex p-3 gap-2 bg-muted/20 border-b border-border/40 flex-wrap transition-colors duration-300">
-            {['queue', 'lyrics', 'library'].map((tab) => (
+            {['player', 'queue', 'lyrics', 'library'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -1165,6 +1168,7 @@ export function AudioPlayer() {
                   activeTab === tab ? "bg-background shadow-sm text-foreground scale-105" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 )}
               >
+                {tab === 'player' && <Play className="h-4 w-4 text-current fill-current" />}
                 {tab === 'queue' && <ListMusic className="h-4 w-4 text-current" />}
                 {tab === 'lyrics' && <Mic2 className="h-4 w-4 text-current" />}
                 {tab === 'library' && <Library className="h-4 w-4 text-current" />}
@@ -1174,7 +1178,13 @@ export function AudioPlayer() {
           </div>
 
           <div className="flex-1 overflow-y-auto min-h-0 overscroll-contain transition-all duration-500">
-            {activeTab === 'lyrics' ? (
+            {activeTab === 'player' ? (
+              <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                <Play className="h-12 w-12 text-muted-foreground/40 mb-4 fill-current" />
+                <p className="font-bold text-lg text-foreground">Player is open</p>
+                <p className="text-sm text-muted-foreground mt-2">Check the main view on the left.</p>
+              </div>
+            ) : activeTab === 'lyrics' ? (
               <div ref={lyricsContainerRef} className="h-full overflow-y-auto no-scrollbar scroll-smooth lyrics-scroll-container pb-32">
                 {lyrics?.syncedLyrics ? (
                   <div className="space-y-5 p-6">
@@ -1350,7 +1360,7 @@ export function AudioPlayer() {
               </div>
 
               <div className="w-full mb-8">
-                <Slider value={[currentTime]} max={duration || 100} step={0.1} onValueChange={handleSeek} className="mb-4 [&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:h-5[&_[data-slot=thumb]]:w-5 [&_[data-slot=track]]:h-2" />
+                <Slider value={[currentTime]} max={duration || 100} step={0.1} onValueChange={handleSeek} className="mb-4 [&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:h-5[&_[data-slot=thumb]]:w-5[&_[data-slot=track]]:h-2" />
                 <div className="flex justify-between text-sm font-bold text-muted-foreground">
                   <span>{formatTime(currentTime)}</span>
                   <span>{formatTime(duration)}</span>
@@ -1396,14 +1406,7 @@ export function AudioPlayer() {
                 ) : lyrics?.plainLyrics ? (
                   <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground font-semibold text-2xl animate-in fade-in duration-500 py-10 px-2">{lyrics.plainLyrics}</p>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <Mic2 className="h-16 w-16 text-muted-foreground/40 mb-6" />
-                    <p className="font-extrabold text-2xl mb-2 text-foreground">No lyrics found</p>
-                    {lyricsProvider === 'KuGou' || lyricsProvider === 'Both' ? 
-                      <p className="text-sm text-muted-foreground font-medium max-w-[200px] text-center">Couldn't find timed lyrics using LrcLib or KuGou.</p> :
-                      <p className="text-sm text-muted-foreground font-medium max-w-[200px] text-center">Couldn't find timed lyrics using LrcLib.</p>
-                    }
-                  </div>
+                  <div className="flex flex-col items-center justify-center h-full"><Mic2 className="h-16 w-16 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-2xl mb-2 text-foreground">No lyrics found</p></div>
                 )}
              </div>
           )}
@@ -1470,7 +1473,7 @@ export function AudioPlayer() {
                 value={[playbackRate]} 
                 min={0.5} max={2.0} step={0.05} 
                 onValueChange={(val) => setPlaybackRate(val[0])} 
-                className="[&_[data-slot=range]]:bg-primary[&_[data-slot=thumb]]:h-5 [&_[data-slot=thumb]]:w-5" 
+                className="[&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:h-5 [&_[data-slot=thumb]]:w-5" 
               />
               <div className="flex justify-between text-xs font-semibold text-muted-foreground">
                 <span>0.5x</span>
