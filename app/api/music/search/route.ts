@@ -25,8 +25,7 @@ export async function GET(request: NextRequest) {
     
     const songs = results.slice(0, 20).map((song) => {
       let thumbUrl = song.thumbnails?.[song.thumbnails.length - 1]?.url || ''
-      
-      // Force YouTube's image server to return 1200x1200px WITH a perfect square crop (-c)
+      // Force perfect square crop (-c) with 1200x1200px resolution
       if (thumbUrl.includes('=w') || thumbUrl.includes('-w')) {
         thumbUrl = thumbUrl.replace(/([=-]w)\d+([=-]h)\d+.*/, '$11200$21200-c')
       }
@@ -35,6 +34,7 @@ export async function GET(request: NextRequest) {
         videoId: song.videoId,
         title: song.name,
         artist: song.artist?.name || 'Unknown Artist',
+        artistId: song.artist?.artistId || null,
         album: song.album?.name || '',
         duration: song.duration || 0,
         thumbnail: thumbUrl,
