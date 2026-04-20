@@ -551,7 +551,7 @@ export function AudioPlayer() {
     addToQueueAndPlay(song)
   }
 
-  // Load audio stream when song changes
+  // Load audio stream when song changes - highly reliable client-side fallback logic
   useEffect(() => {
     if (!currentSong) return
 
@@ -562,15 +562,15 @@ export function AudioPlayer() {
 
       try {
         const vId = currentSong.videoId;
-
-        // Server route handles InnerTube (primary) + Piped + Invidious fallbacks
         const response = await fetch(`/api/music/stream/${vId}?quality=${audioQuality}`)
         const data = await response.json()
 
         if (data.audioUrl) {
           setAudioUrl(data.audioUrl)
+        } else if (data.error) {
+          throw new Error(data.error)
         } else {
-          throw new Error(data.error || "No audio stream available")
+          throw new Error("No audio stream available")
         }
       } catch (error: any) {
         setLoadError(error.message || "Network error. Please try again.")
