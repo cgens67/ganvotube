@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -26,7 +25,7 @@ import {
   X, ListMusic, Mic2, MoreVertical, Info, Heart, ChevronDown,
   ChevronUp, ExternalLink, History, Library, UserCircle2, LogOut,
   Maximize, Minimize, Settings, TrendingUp, ListPlus, Disc3, MicVocal,
-  ArrowLeft, Palette, LayoutTemplate, CornerUpRight, AudioLines, Type
+  ArrowLeft, Palette, LayoutTemplate, CornerUpRight, AudioLines, Type, Star, FileText, Copyright
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -51,7 +50,7 @@ interface LyricLine { time: number; text: string; }
 interface LyricsData { syncedLyrics: LyricLine[] | null; plainLyrics: string | null; }
 
 export function AudioPlayer() {
-  const [isDark, setIsDark] = useState(false)
+  const[isDark, setIsDark] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   
   const[searchQuery, setSearchQuery] = useState("")
@@ -63,7 +62,7 @@ export function AudioPlayer() {
   const [searchFocused, setSearchFocused] = useState(false)
   
   const [queue, setQueue] = useState<Song[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const[currentIndex, setCurrentIndex] = useState(0)
   const[isPlaying, setIsPlaying] = useState(false)
   const[currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -85,9 +84,9 @@ export function AudioPlayer() {
   const [isMobilePlayerExpanded, setIsMobilePlayerExpanded] = useState(false)
   const[mobilePlayerTab, setMobilePlayerTab] = useState<'player' | 'lyrics' | 'queue'>('player')
 
-  const[exploreData, setExploreData] = useState<{artists: any[], songs: Song[], albums: any[]}>({artists: [], songs: [], albums:[]})
+  const[exploreData, setExploreData] = useState<{creatorsPicks: Song[], artists: any[], songs: Song[], albums: any[]}>({creatorsPicks: [], artists: [], songs: [], albums:[]})
   const[isExploreLoading, setIsExploreLoading] = useState(true)
-  const [exploreError, setExploreError] = useState(false)
+  const[exploreError, setExploreError] = useState(false)
   
   const[currentArtistData, setCurrentArtistData] = useState<any>(null)
   const [isArtistLoading, setIsArtistLoading] = useState(false)
@@ -98,6 +97,8 @@ export function AudioPlayer() {
   // Dialog States
   const [showAboutDialog, setShowAboutDialog] = useState(false)
   const[showCreditsDialog, setShowCreditsDialog] = useState(false)
+  const[showTosDialog, setShowTosDialog] = useState(false)
+  const[showCopyrightDialog, setShowCopyrightDialog] = useState(false)
   const[showAccountSettings, setShowAccountSettings] = useState(false) 
   const [showPlayerSettings, setShowPlayerSettings] = useState(false) 
   const[showEffectsDialog, setShowEffectsDialog] = useState(false)
@@ -105,7 +106,7 @@ export function AudioPlayer() {
   const [newPlaylistName, setNewPlaylistName] = useState("")
   
   // Customization Settings
-  const [dynamicTheme, setDynamicTheme] = useState(true)
+  const[dynamicTheme, setDynamicTheme] = useState(true)
   const[playerBgStyle, setPlayerBgStyle] = useState<'Theme' | 'Gradient' | 'Blur'>('Gradient')
   const[thumbnailRadius, setThumbnailRadius] = useState(32)
   const[dominantColor, setDominantColor] = useState<string | null>(null)
@@ -124,7 +125,7 @@ export function AudioPlayer() {
   // Data States
   const [likedSongs, setLikedSongs] = useState<Set<string>>(new Set())
   const[savedSongs, setSavedSongs] = useState<Song[]>([])
-  const [playlists, setPlaylists] = useState<Playlist[]>([])
+  const[playlists, setPlaylists] = useState<Playlist[]>([])
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const lyricsContainerRef = useRef<HTMLDivElement>(null)
@@ -163,7 +164,7 @@ export function AudioPlayer() {
           r += data[i]; g += data[i+1]; b += data[i+2];
         }
         const pixels = data.length / 16
-        setDominantColor(`rgba(${~~(r/pixels)}, ${~~(g/pixels)}, ${~~(b/pixels)}, 0.35)`)
+        setDominantColor(`rgba(${~~(r/pixels)}, ${~~(g/pixels)}, ${~~(b/pixels)}, 0.45)`)
       } catch(e) { setDominantColor(null) }
     }
   },[currentSong?.thumbnail, playerBgStyle])
@@ -179,7 +180,7 @@ export function AudioPlayer() {
       // @ts-ignore
       audioRef.current.webkitPreservesPitch = preservesPitch
     }
-  }, [playbackRate, preservesPitch])
+  },[playbackRate, preservesPitch])
 
   useEffect(() => {
     applyAudioEffects()
@@ -451,7 +452,7 @@ export function AudioPlayer() {
   const addToQueueAndPlay = async (song: Song) => {
     const saveSearchStr = searchQuery || song.title
     if (saveSearchStr.trim()) {
-      const newHistory = [saveSearchStr, ...searchHistory.filter(q => q !== saveSearchStr)].slice(0, 15)
+      const newHistory =[saveSearchStr, ...searchHistory.filter(q => q !== saveSearchStr)].slice(0, 15)
       setSearchHistory(newHistory)
       localStorage.setItem('ganvo_search_history', JSON.stringify(newHistory))
     }
@@ -669,47 +670,28 @@ export function AudioPlayer() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
-  const handleRetryStream = async () => {
-    if (!currentSong) return;
-    setLoadError(null);
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch(`/api/music/stream/${currentSong.videoId}`);
-      const data = await response.json();
-      
-      if (data.audioUrl) {
-        setAudioUrl(data.audioUrl);
-        if (audioRef.current) {
-          audioRef.current.src = data.audioUrl;
-          audioRef.current.load();
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => setIsPlaying(true)).catch(e => {
-              if (e.name !== 'AbortError') setLoadError("Playback failed. Try another song.");
-            });
-          }
-        }
-      } else {
-        setLoadError(data.error || "Failed to load stream");
-      }
-    } catch (e) {
-      setLoadError("Network error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 50 ? Volume1 : Volume2
   const showSearchDropdown = searchFocused && (searchResults.length > 0 || isSearching || (searchQuery.trim() === "" && searchHistory.length > 0))
 
   return (
-    <div className={cn("flex h-screen flex-col overflow-hidden bg-background transition-colors duration-500 font-sans relative z-0", dynamicTheme && playerBgStyle === 'Gradient' && dominantColor ? "animate-gradient" : "")} 
-         style={dynamicTheme && playerBgStyle === 'Gradient' && dominantColor ? { backgroundImage: `radial-gradient(circle at center, ${dominantColor} 0%, var(--background) 100%)` } : {}}>
-      
-      {playerBgStyle === 'Blur' && currentSong && dynamicTheme && (
-        <div className="absolute inset-0 z-[-1] overflow-hidden pointer-events-none">
-          <img src={currentSong.thumbnail} className="w-full h-full object-cover blur-[100px] opacity-30 transition-all duration-1000" />
+    <div className="flex h-screen flex-col overflow-hidden font-sans relative z-0 bg-background transition-colors duration-1000">
+      {dynamicTheme && playerBgStyle === 'Gradient' && dominantColor && (
+        <>
+          <div 
+            className="absolute inset-0 z-[-2] transition-colors duration-1000 ease-in-out" 
+            style={{ backgroundColor: dominantColor }} 
+          />
+          <div className="absolute inset-0 z-[-1] bg-gradient-to-b from-transparent via-background/60 to-background pointer-events-none" />
+        </>
+      )}
+
+      {dynamicTheme && playerBgStyle === 'Blur' && currentSong && (
+        <div className="absolute inset-0 z-[-2] overflow-hidden pointer-events-none bg-background">
+          <img 
+            key={currentSong.videoId}
+            src={currentSong.thumbnail} 
+            className="w-full h-full object-cover blur-[100px] opacity-40 animate-in fade-in duration-1000" 
+          />
         </div>
       )}
 
@@ -726,7 +708,7 @@ export function AudioPlayer() {
       {/* Header - Expressive M3 style */}
       <header className="elevation-1 z-40 flex h-16 flex-shrink-0 items-center justify-between px-3 md:px-6 transition-all duration-500 ease-out relative bg-background/90 backdrop-blur-xl border-b border-border/40 gap-2">
         <div className={cn(
-          "flex items-center shrink-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left overflow-hidden", 
+          "flex items-center shrink-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-left overflow-hidden min-w-fit", 
           searchFocused ? "max-w-0 opacity-0 gap-0 mr-0" : "max-w-[200px] opacity-100 gap-3 mr-2"
         )}>
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-110 shadow-md">
@@ -861,20 +843,20 @@ export function AudioPlayer() {
               )}
               <DropdownMenuSeparator />
               {user && (
-                <DropdownMenuItem onClick={() => setShowAccountSettings(true)} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowAccountSettings(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
                   <UserCircle2 className="h-4 w-4 text-muted-foreground text-current" /> Account Details
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => setShowPlayerSettings(true)} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
-                <LayoutTemplate className="h-4 w-4 text-muted-foreground text-current" /> Appearance
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowPlayerSettings(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
+                <Settings className="h-4 w-4 text-muted-foreground text-current" /> Settings
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowEffectsDialog(true)} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowEffectsDialog(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
                 <AudioLines className="h-4 w-4 text-muted-foreground text-current" /> Audio Effects
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowAboutDialog(true)} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowAboutDialog(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
                 <Info className="h-4 w-4 text-muted-foreground text-current" /> About Ganvo
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowCreditsDialog(true)} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowCreditsDialog(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground">
                 <Heart className="h-4 w-4 text-muted-foreground text-current" /> Credits & APIs
               </DropdownMenuItem>
               {user && (
@@ -914,10 +896,33 @@ export function AudioPlayer() {
                  </div>
                ) : (
                  <div className="space-y-12">
+                   {exploreData?.creatorsPicks?.length > 0 && (
+                     <div>
+                       <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-foreground"><Star className="h-6 w-6 text-primary"/> Creator's Top Picks</h3>
+                       <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }} className="w-full overflow-hidden">
+                         <div className="flex overflow-x-auto pb-4 gap-6 snap-x no-scrollbar py-4 px-4 -my-4">
+                            {exploreData.creatorsPicks.map((song, idx) => (
+                              <div key={idx} onClick={() => addToQueueAndPlay(song)} className="group flex flex-col gap-3 w-40 sm:w-48 shrink-0 cursor-pointer snap-start">
+                                <div className="overflow-hidden rounded-2xl shadow-md transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-105 group-active:scale-95 aspect-square relative">
+                                  <img src={song.thumbnail} className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <Play className="h-10 w-10 text-white fill-white" />
+                                  </div>
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm truncate text-foreground group-hover:text-primary transition-colors">{song.title}</p>
+                                  <p className="text-xs font-medium text-muted-foreground mt-0.5 truncate">{song.artist}</p>
+                                </div>
+                              </div>
+                            ))}
+                         </div>
+                       </div>
+                     </div>
+                   )}
                    {exploreData?.artists?.length > 0 && (
                      <div>
                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-foreground"><UserCircle2 className="h-6 w-6 text-primary"/> Top Artists</h3>
-                       <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }} className="w-full overflow-hidden">
+                       <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }} className="w-full overflow-hidden">
                          <div className="flex overflow-x-auto pb-4 gap-6 snap-x no-scrollbar py-4 px-4 -my-4">
                             {exploreData.artists.map((artist, idx) => (
                               <div key={artist.artistId || idx} onClick={() => loadArtistView(artist.artistId)} className="group flex flex-col items-center gap-4 cursor-pointer snap-start w-32 sm:w-40 shrink-0">
@@ -973,7 +978,7 @@ export function AudioPlayer() {
                    {exploreData?.albums?.length > 0 && (
                      <div>
                        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-foreground"><Disc3 className="h-6 w-6 text-primary"/> Top Albums</h3>
-                       <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }} className="w-full overflow-hidden">
+                       <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }} className="w-full overflow-hidden">
                          <div className="flex overflow-x-auto pb-4 gap-6 snap-x no-scrollbar py-4 px-4 -my-4">
                             {exploreData.albums.map((album, idx) => (
                               <div key={idx} onClick={() => loadAlbumView(album.albumId)} className="flex flex-col gap-3 w-40 sm:w-48 shrink-0 group cursor-pointer snap-start">
@@ -1053,7 +1058,7 @@ export function AudioPlayer() {
                     {currentArtistData.albums?.length > 0 && (
                       <div className="mb-12">
                         <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-foreground"><Disc3 className="h-6 w-6 text-primary"/> Albums</h3>
-                        <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }} className="w-full overflow-hidden">
+                        <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }} className="w-full overflow-hidden">
                           <div className="flex overflow-x-auto pb-4 gap-4 snap-x no-scrollbar py-4 px-4 -my-4">
                             {currentArtistData.albums.map((album: any, idx: number) => (
                               <div key={idx} onClick={() => loadAlbumView(album.albumId)} className="flex flex-col gap-3 w-40 sm:w-48 shrink-0 group cursor-pointer snap-start">
@@ -1074,7 +1079,7 @@ export function AudioPlayer() {
                     {currentArtistData.singles?.length > 0 && (
                       <div className="mb-8">
                         <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-foreground"><Music2 className="h-6 w-6 text-primary"/> Singles & EPs</h3>
-                        <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }} className="w-full overflow-hidden">
+                        <div style={{ WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)', maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }} className="w-full overflow-hidden">
                           <div className="flex overflow-x-auto pb-4 gap-4 snap-x no-scrollbar py-4 px-4 -my-4">
                             {currentArtistData.singles.map((single: any, idx: number) => (
                               <div key={idx} onClick={() => loadAlbumView(single.albumId)} className="flex flex-col gap-3 w-40 sm:w-48 shrink-0 group cursor-pointer snap-start">
@@ -1339,20 +1344,9 @@ export function AudioPlayer() {
               </div>
             ) : activeTab === 'lyrics' ? (
               <div className="h-full flex flex-col relative">
-                <div className="p-3 border-b flex justify-end">
-                  <Select value={lyricsProvider} onValueChange={(v: any) => { setLyricsProvider(v); localStorage.setItem('ganvo_lyrics_provider', v)}}>
-                    <SelectTrigger className="h-8 text-xs w-[130px] rounded-full bg-muted font-bold text-foreground border-none outline-none focus:ring-0">
-                      <SelectValue placeholder="Provider" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl z-[400]">
-                      <SelectItem value="lrclib" className="font-semibold text-xs">LRCLib (Default)</SelectItem>
-                      <SelectItem value="kugou" className="font-semibold text-xs">KuGou Lyrics</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div ref={lyricsContainerRef} className="flex-1 overflow-y-auto no-scrollbar scroll-smooth lyrics-scroll-container pb-32">
                   {lyrics?.syncedLyrics ? (
-                    <div className="space-y-5 p-6">
+                    <div className="space-y-5 p-6 mt-4">
                       {lyrics.syncedLyrics.map((line, index) => (
                         <p key={index} onClick={() => { if (audioRef.current) audioRef.current.currentTime = line.time }} className={cn("lyric-line transition-all duration-500 ease-out cursor-pointer rounded-2xl px-4 py-3 font-bold leading-relaxed text-center", getLyricTextClass(), index === currentLyricIndex ? "lyric-active-line scale-[1.05] bg-primary/10 text-primary shadow-sm origin-left" : index < currentLyricIndex ? "text-muted-foreground/30 scale-95 origin-left" : "text-muted-foreground/70 hover:bg-muted hover:text-foreground scale-95 origin-left")}>
                           {line.text}
@@ -1362,7 +1356,7 @@ export function AudioPlayer() {
                   ) : lyrics?.plainLyrics ? (
                     <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground font-medium text-base text-center animate-in fade-in duration-500 p-6">{lyrics.plainLyrics}</p>
                   ) : currentSong ? (
-                    <div className="flex flex-col items-center justify-center py-24 text-center h-full"><Mic2 className="h-10 w-10 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-xl mb-2 text-foreground">Couldn't find timed lyrics</p><p className="text-sm font-medium text-muted-foreground px-4 mt-2">Try switching providers using the dropdown above.</p></div>
+                    <div className="flex flex-col items-center justify-center py-24 text-center h-full"><Mic2 className="h-10 w-10 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-xl mb-2 text-foreground">Couldn't find timed lyrics</p><p className="text-sm font-medium text-muted-foreground px-4 mt-2">Try changing the lyrics provider in Settings.</p></div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-24 text-center h-full"><Music2 className="h-10 w-10 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-xl mb-2 text-foreground">Nothing Playing</p></div>
                   )}
@@ -1507,13 +1501,31 @@ export function AudioPlayer() {
       />
       <div 
         className={cn(
-          "fixed inset-x-0 bottom-0 z-[200] bg-background flex flex-col transition-transform duration-500 ease-out lg:hidden rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.3)]",
-          isMobilePlayerExpanded ? "translate-y-0 h-[96dvh]" : "translate-y-[100%] h-[96dvh]",
-          dynamicTheme && playerBgStyle === 'Gradient' && dominantColor ? "animate-gradient" : ""
+          "fixed inset-x-0 bottom-0 z-[200] bg-background flex flex-col transition-transform duration-500 ease-out lg:hidden rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] transition-colors duration-1000",
+          isMobilePlayerExpanded ? "translate-y-0 h-[96dvh]" : "translate-y-[100%] h-[96dvh]"
         )}
-        style={dynamicTheme && playerBgStyle === 'Gradient' && dominantColor ? { backgroundImage: `radial-gradient(circle at center, ${dominantColor} 0%, var(--background) 100%)` } : {}}
       >
-        <div className="flex items-center justify-between p-4 mt-2">
+        {dynamicTheme && playerBgStyle === 'Gradient' && dominantColor && (
+          <>
+            <div 
+              className="absolute inset-0 z-[-2] transition-colors duration-1000 ease-in-out rounded-t-[2.5rem]" 
+              style={{ backgroundColor: dominantColor }} 
+            />
+            <div className="absolute inset-0 z-[-1] bg-gradient-to-b from-transparent via-background/60 to-background pointer-events-none rounded-t-[2.5rem]" />
+          </>
+        )}
+        
+        {dynamicTheme && playerBgStyle === 'Blur' && currentSong && (
+          <div className="absolute inset-0 z-[-2] overflow-hidden pointer-events-none bg-background rounded-t-[2.5rem]">
+            <img 
+              key={currentSong.videoId}
+              src={currentSong.thumbnail} 
+              className="w-full h-full object-cover blur-[100px] opacity-40 animate-in fade-in duration-1000" 
+            />
+          </div>
+        )}
+
+        <div className="flex items-center justify-between p-4 mt-2 relative z-10">
           <Button variant="ghost" size="icon" onClick={() => setIsMobilePlayerExpanded(false)} className="h-12 w-12 rounded-full hover:bg-muted active:scale-90 text-foreground outline-none focus:outline-none">
             <ChevronDown className="h-8 w-8 text-current" />
           </Button>
@@ -1530,17 +1542,24 @@ export function AudioPlayer() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-2xl animate-in fade-in zoom-in-95 duration-300 ease-out p-2 shadow-xl border-border/50 z-[400]">
-              <DropdownMenuItem onClick={() => setShowPlayerSettings(true)} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground outline-none focus:outline-none">
-                <LayoutTemplate className="h-4 w-4 text-muted-foreground text-current" /> Appearance
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowPlayerSettings(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground outline-none focus:outline-none">
+                <Settings className="h-4 w-4 text-muted-foreground text-current" /> Settings
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowEffectsDialog(true)} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground outline-none focus:outline-none">
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowEffectsDialog(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground outline-none focus:outline-none">
                 <AudioLines className="h-4 w-4 text-muted-foreground text-current" /> Audio Effects
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowTosDialog(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground outline-none focus:outline-none">
+                <FileText className="h-4 w-4 text-muted-foreground text-current" /> Terms of Service
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setTimeout(() => setShowCopyrightDialog(true), 100); }} className="cursor-pointer gap-3 rounded-xl py-2.5 font-medium transition-colors active:scale-[0.98] text-foreground outline-none focus:outline-none">
+                <Copyright className="h-4 w-4 text-muted-foreground text-current" /> Copyright
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 relative px-6 pb-6 pt-4 flex flex-col">
+        <div className="flex-1 overflow-y-auto min-h-0 relative px-6 pb-6 pt-4 flex flex-col z-10">
           {mobilePlayerTab === 'player' && currentSong && (
             <div className="flex flex-col items-center h-full animate-in fade-in zoom-in-95 duration-500 flex-1 justify-center relative">
               {loadError && (
@@ -1550,12 +1569,12 @@ export function AudioPlayer() {
               )}
               {/* Responsive Square Album Art */}
               <div 
-                className="aspect-square w-[85vw] max-w-[320px] mx-auto overflow-hidden shadow-2xl relative mb-8"
+                className="w-[85vw] max-w-[320px] min-h-[min(85vw,320px)] aspect-square mx-auto overflow-hidden shadow-2xl relative mb-8 shrink-0 flex items-center justify-center"
                 style={{ borderRadius: `${thumbnailRadius}px` }}
               >
-                 <img src={currentSong.thumbnail} className={cn("w-full h-full object-cover transition-transform duration-[2s] ease-out", isPlaying ? "scale-105" : "scale-100")} />
+                 <img src={currentSong.thumbnail} className={cn("w-full h-full object-cover transition-transform duration-[2s] ease-out absolute inset-0", isPlaying ? "scale-105" : "scale-100")} />
                  {isLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md z-10">
                       <Loader2 className="h-12 w-12 animate-spin text-white mb-2" />
                     </div>
                   )}
@@ -1604,20 +1623,9 @@ export function AudioPlayer() {
 
           {mobilePlayerTab === 'lyrics' && (
              <div className="h-full flex flex-col relative">
-                <div className="p-2 border-b flex justify-end">
-                  <Select value={lyricsProvider} onValueChange={(v: any) => { setLyricsProvider(v); localStorage.setItem('ganvo_lyrics_provider', v)}}>
-                    <SelectTrigger className="h-8 text-xs w-[130px] rounded-full bg-muted font-bold text-foreground border-none outline-none focus:ring-0">
-                      <SelectValue placeholder="Provider" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl z-[400]">
-                      <SelectItem value="lrclib" className="font-semibold text-xs">LRCLib (Default)</SelectItem>
-                      <SelectItem value="kugou" className="font-semibold text-xs">KuGou Lyrics</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div ref={lyricsContainerRefMobile} className="flex-1 overflow-y-auto no-scrollbar scroll-smooth lyrics-scroll-container pb-32">
                   {lyrics?.syncedLyrics ? (
-                    <div className="space-y-6 py-10">
+                    <div className="space-y-6 py-10 mt-4">
                       {lyrics.syncedLyrics.map((line, index) => (
                         <p key={index} onClick={() => { if (audioRef.current) audioRef.current.currentTime = line.time }} className={cn("lyric-line transition-all duration-500 ease-out cursor-pointer rounded-3xl px-6 py-4 font-extrabold leading-tight text-center", getLyricTextClass(), index === currentLyricIndex ? "lyric-active-line scale-[1.05] bg-primary/10 text-primary shadow-sm origin-left" : index < currentLyricIndex ? "text-muted-foreground/30 scale-95 origin-left" : "text-muted-foreground/70 hover:bg-muted hover:text-foreground scale-95 origin-left")}>
                           {line.text}
@@ -1627,7 +1635,7 @@ export function AudioPlayer() {
                   ) : lyrics?.plainLyrics ? (
                     <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground font-semibold text-xl text-center animate-in fade-in duration-500 py-10 px-2">{lyrics.plainLyrics}</p>
                   ) : currentSong ? (
-                    <div className="flex flex-col items-center justify-center h-full"><Mic2 className="h-16 w-16 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-2xl mb-2 text-foreground">Couldn't find timed lyrics</p><p className="text-sm font-medium text-muted-foreground px-6 mt-2 text-center">Try switching providers using the dropdown above.</p></div>
+                    <div className="flex flex-col items-center justify-center h-full"><Mic2 className="h-16 w-16 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-2xl mb-2 text-foreground">Couldn't find timed lyrics</p><p className="text-sm font-medium text-muted-foreground px-6 mt-2 text-center">Try changing the lyrics provider in Settings.</p></div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full"><Music2 className="h-16 w-16 text-muted-foreground/40 mb-6" /><p className="font-extrabold text-2xl mb-2 text-foreground">Nothing Playing</p></div>
                   )}
@@ -1701,7 +1709,7 @@ export function AudioPlayer() {
         <DialogContent className="rounded-[2rem] sm:max-w-md p-0 border-0 shadow-2xl animate-in zoom-in-95 duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] outline-none overflow-hidden bg-background !z-[400]">
           <div className="flex items-center gap-4 p-5 border-b bg-card/50 backdrop-blur-sm">
             <Button variant="ghost" size="icon" onClick={() => setShowPlayerSettings(false)} className="rounded-full text-foreground outline-none focus:outline-none"><ArrowLeft className="w-6 h-6 text-current"/></Button>
-            <h2 className="text-xl font-bold text-foreground">Appearance</h2>
+            <h2 className="text-xl font-bold text-foreground">Settings</h2>
           </div>
           <div className="p-2 overflow-y-auto max-h-[70vh] no-scrollbar pb-10">
              <div className="px-4 py-2 space-y-1">
@@ -1753,6 +1761,46 @@ export function AudioPlayer() {
                   </Select>
                </div>
 
+               <div className="flex flex-col p-3 mt-2 bg-transparent rounded-2xl transition-colors">
+                 <div className="flex items-center justify-between mb-4">
+                   <div className="flex items-center gap-4">
+                     <div className="p-2 bg-muted/80 rounded-full text-foreground"><CornerUpRight className="w-5 h-5 text-current"/></div>
+                     <span className="font-bold text-base text-foreground">Customize thumbnail radius</span>
+                   </div>
+                   <span className="text-xs font-bold bg-muted px-2.5 py-1 rounded-full text-foreground">{thumbnailRadius}px</span>
+                 </div>
+                 <Slider 
+                    value={[thumbnailRadius]} 
+                    min={0} max={64} step={2} 
+                    onValueChange={(val) => setThumbnailRadius(val[0])} 
+                    className="[&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:h-5 [&_[data-slot=thumb]]:w-5" 
+                  />
+               </div>
+               
+             </div>
+             
+             <div className="px-4 py-4 space-y-1">
+               <h3 className="text-[13px] font-bold text-primary mb-4 ml-2">Lyrics</h3>
+
+               <div className="flex items-center justify-between p-3 bg-transparent rounded-2xl cursor-pointer hover:bg-muted/50 transition-colors">
+                 <div className="flex items-center gap-4">
+                   <div className="p-2 bg-muted/80 rounded-full text-foreground"><MicVocal className="w-5 h-5 text-current"/></div>
+                   <div className="flex flex-col">
+                     <span className="font-bold text-base text-foreground">Preferred provider</span>
+                     <span className="text-xs font-normal text-muted-foreground">Source used for synced lyrics.</span>
+                   </div>
+                 </div>
+                 <Select value={lyricsProvider} onValueChange={(v: any) => { setLyricsProvider(v); localStorage.setItem('ganvo_lyrics_provider', v)}}>
+                    <SelectTrigger className="w-[110px] rounded-xl font-bold bg-muted border-none text-foreground text-xs h-9 shrink-0 outline-none focus:ring-0">
+                      <SelectValue placeholder="Provider" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl z-[500]">
+                      <SelectItem value="lrclib" className="font-bold py-2 text-xs">LRCLib</SelectItem>
+                      <SelectItem value="kugou" className="font-bold py-2 text-xs">KuGou</SelectItem>
+                    </SelectContent>
+                  </Select>
+               </div>
+
                <div className="flex items-center justify-between p-3 mt-2 bg-transparent rounded-2xl cursor-pointer hover:bg-muted/50 transition-colors">
                  <div className="flex items-center gap-4">
                    <div className="p-2 bg-muted/80 rounded-full text-foreground"><Type className="w-5 h-5 text-current"/></div>
@@ -1772,23 +1820,35 @@ export function AudioPlayer() {
                     </SelectContent>
                   </Select>
                </div>
-
-               <div className="flex flex-col p-3 mt-2 bg-transparent rounded-2xl transition-colors">
-                 <div className="flex items-center justify-between mb-4">
-                   <div className="flex items-center gap-4">
-                     <div className="p-2 bg-muted/80 rounded-full text-foreground"><CornerUpRight className="w-5 h-5 text-current"/></div>
-                     <span className="font-bold text-base text-foreground">Customize thumbnail radius</span>
-                   </div>
-                   <span className="text-xs font-bold bg-muted px-2.5 py-1 rounded-full text-foreground">{thumbnailRadius}px</span>
-                 </div>
-                 <Slider 
-                    value={[thumbnailRadius]} 
-                    min={0} max={64} step={2} 
-                    onValueChange={(val) => setThumbnailRadius(val[0])} 
-                    className="[&_[data-slot=range]]:bg-primary [&_[data-slot=thumb]]:h-5 [&_[data-slot=thumb]]:w-5" 
-                  />
-               </div>
+               
              </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showTosDialog} onOpenChange={setShowTosDialog}>
+        <DialogContent className="rounded-[2rem] sm:max-w-md p-8 border-0 shadow-2xl animate-in zoom-in-95 duration-500 ease-out outline-none bg-background !z-[400]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-extrabold flex items-center gap-3 text-foreground"><FileText className="h-6 w-6 text-primary"/> Terms of Service</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 text-sm text-muted-foreground leading-relaxed space-y-4">
+            <p>Welcome to Ganvo Music.</p>
+            <p>By using this service, you agree to respect the intellectual property of the artists, creators, and third-party services providing the content.</p>
+            <p>This app is for personal, non-commercial use only. Streaming services are provided via public APIs (Cobalt, Piped, Invidious) and are subject to their respective availability and terms.</p>
+            <p>We do not host or store any audio files on our servers.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCopyrightDialog} onOpenChange={setShowCopyrightDialog}>
+        <DialogContent className="rounded-[2rem] sm:max-w-md p-8 border-0 shadow-2xl animate-in zoom-in-95 duration-500 ease-out outline-none bg-background !z-[400]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-extrabold flex items-center gap-3 text-foreground"><Copyright className="h-6 w-6 text-primary"/> Copyright</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 text-sm text-muted-foreground leading-relaxed space-y-4">
+            <p>All music metadata, album arts, and audio streams are provided through third-party APIs (YouTube Music, Piped, Invidious, Cobalt).</p>
+            <p>Lyrics are provided by LRCLIB and KuGou under their respective licenses.</p>
+            <p>Ganvo Music acts merely as a client and a search aggregator. It does not control or distribute copyrighted material.</p>
           </div>
         </DialogContent>
       </Dialog>
