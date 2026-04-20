@@ -33,17 +33,33 @@ export async function GET() {
       ytmusic.searchAlbums("Top Albums 2024")
     ])
     
-    // Hardcoded Creator's Picks for maximum speed, correct metadata, and reliability
-    const creatorsPicks =[
-      { videoId: 'M_DiTjNBiOY', title: 'XO Tour Llif3', artist: 'Lil Uzi Vert', album: 'Luv Is Rage 2', duration: 182, thumbnail: 'https://i.ytimg.com/vi/M_DiTjNBiOY/maxresdefault.jpg' },
-      { videoId: 'nmbiBVPe5bY', title: 'APT.', artist: 'ROSÉ & Bruno Mars', album: 'rosie', duration: 170, thumbnail: 'https://i.ytimg.com/vi/nmbiBVPe5bY/maxresdefault.jpg' },
-      { videoId: 'p9OtySpRRL8', title: 'Die With A Smile', artist: 'Lady Gaga, Bruno Mars', album: 'Die With A Smile', duration: 251, thumbnail: 'https://i.ytimg.com/vi/p9OtySpRRL8/maxresdefault.jpg' },
-      { videoId: 'iHsObIWkM-s', title: 'Heartless', artist: 'The Weeknd', album: 'After Hours', duration: 201, thumbnail: 'https://i.ytimg.com/vi/iHsObIWkM-s/maxresdefault.jpg' },
-      { videoId: '_2qJy5r-WAY', title: 'Starboy', artist: 'The Weeknd', album: 'Starboy', duration: 230, thumbnail: 'https://i.ytimg.com/vi/_2qJy5r-WAY/maxresdefault.jpg' },
-      { videoId: 'M2dgm4xK3IY', title: 'Blinding Lights', artist: 'The Weeknd', album: 'After Hours', duration: 200, thumbnail: 'https://i.ytimg.com/vi/M2dgm4xK3IY/maxresdefault.jpg' },
-      { videoId: 'DntZ3-yCaFs', title: 'Save Your Tears', artist: 'The Weeknd', album: 'After Hours', duration: 215, thumbnail: 'https://i.ytimg.com/vi/DntZ3-yCaFs/maxresdefault.jpg' },
-      { videoId: '-KrC-gqKTMg', title: 'Die For You', artist: 'The Weeknd', album: 'Starboy', duration: 200, thumbnail: 'https://i.ytimg.com/vi/-KrC-gqKTMg/maxresdefault.jpg' }
+    // Dynamically search for Creator's Picks to ensure 100% correct metadata & audio availability
+    const searchQueries =[
+      'XO Tour Llif3 Lil Uzi Vert',
+      'APT. Rose Bruno Mars',
+      'Die With A Smile Lady Gaga Bruno Mars',
+      'Heartless The Weeknd',
+      'Starboy The Weeknd',
+      'Blinding Lights The Weeknd',
+      'Save Your Tears The Weeknd',
+      'Die For You The Weeknd'
     ];
+
+    const picksResults = await Promise.all(searchQueries.map(async q => {
+       try {
+         const res = await ytmusic.searchSongs(q);
+         return res[0]; // Take the most accurate song result
+       } catch(e) { return null; }
+    }));
+
+    const creatorsPicks = picksResults.filter(Boolean).map(s => ({
+      videoId: s.videoId,
+      title: s.name,
+      artist: s.artist?.name || 'Unknown Artist',
+      album: s.album?.name || '',
+      duration: s.duration || 0,
+      thumbnail: formatThumb(s.thumbnails)
+    }));
     
     const artists = artistsRes.slice(0, 15).map(a => ({
       artistId: a.artistId,
