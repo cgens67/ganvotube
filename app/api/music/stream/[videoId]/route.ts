@@ -3,10 +3,18 @@ import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+const INVIDIOUS_INSTANCES =[
+  'https://inv.tux.pizza',
+  'https://invidious.asir.dev',
+  'https://invidious.protokolla.fi',
+  'https://vid.puffyan.us',
+  'https://inv.nadeko.net',
+  'https://invidious.privacydev.net'
+]
+
 const PIPED_INSTANCES =[
   'https://pipedapi.kavin.rocks',
   'https://api.piped.yt',
-  'https://pipedapi.tokhmi.xyz',
   'https://pipedapi.adminforge.de'
 ]
 
@@ -14,7 +22,7 @@ async function tryCobalt(videoId: string) {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 6000)
-    const res = await fetch('https://api.cobalt.tools/', {
+    const res = await fetch('https://api.cobalt.tools', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -47,15 +55,17 @@ async function tryRyzen(videoId: string) {
   } catch { return null }
 }
 
-async function tryVreden(videoId: string) {
+async function tryInvidious(videoId: string, instance: string) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 6000)
-    const res = await fetch(`https://api.vreden.web.id/api/ytmp3?url=https://youtu.be/${videoId}`, { signal: controller.signal })
+    const timeoutId = setTimeout(() => controller.abort(), 4500)
+    const res = await fetch(`${instance}/api/v1/videos/${videoId}`, { signal: controller.signal })
     clearTimeout(timeoutId)
-    if (res.ok) {
-      const data = await res.json()
-      if (data.result?.download?.url) return { audioUrl: data.result.download.url, duration: 0, source: 'vreden' }
+    if (!res.ok) return null
+    const data = await res.json()
+    if (data.lengthSeconds) {
+      // local=true securely proxies the audio stream through the Invidious instance! Bypasses all IP blocks.
+      return { audioUrl: `${instance}/latest_version?id=${videoId}&itag=140&local=true`, duration: data.lengthSeconds, source: 'invidious' }
     }
   } catch { return null }
 }
@@ -63,7 +73,7 @@ async function tryVreden(videoId: string) {
 async function tryPiped(videoId: string, instance: string, quality: string) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 6000)
+    const timeoutId = setTimeout(() => controller.abort(), 4500)
     const res = await fetch(`${instance}/streams/${videoId}`, { signal: controller.signal })
     clearTimeout(timeoutId)
     if (!res.ok) return null
@@ -90,7 +100,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const promises =[
     tryCobalt(videoId),
     tryRyzen(videoId),
-    tryVreden(videoId),
+    ...INVIDIOUS_INSTANCES.map(i => tryInvidious(videoId, i)),
     ...PIPED_INSTANCES.map(i => tryPiped(videoId, i, quality))
   ]
 
