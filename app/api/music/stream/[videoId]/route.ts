@@ -19,11 +19,17 @@ const INVIDIOUS_INSTANCES =[
   'https://vid.puffyan.us'
 ]
 
-async function tryCobalt(videoId: string) {
+const COBALT_INSTANCES =[
+  'https://api.cobalt.tools',
+  'https://cobalt.q0.o0o.ooo',
+  'https://co.wuk.sh'
+]
+
+async function tryCobalt(videoId: string, instance: string) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-    const res = await fetch('https://api.cobalt.tools/', {
+    const timeoutId = setTimeout(() => controller.abort(), 4000)
+    const res = await fetch(instance, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -46,7 +52,7 @@ async function tryCobalt(videoId: string) {
 async function tryRyzen(videoId: string) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    const timeoutId = setTimeout(() => controller.abort(), 4000)
     const res = await fetch(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=https://youtu.be/${videoId}`, { signal: controller.signal })
     clearTimeout(timeoutId)
     if (res.ok) {
@@ -59,7 +65,7 @@ async function tryRyzen(videoId: string) {
 async function tryPiped(videoId: string, instance: string) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    const timeoutId = setTimeout(() => controller.abort(), 4000)
     const res = await fetch(`${instance}/streams/${videoId}`, { signal: controller.signal })
     clearTimeout(timeoutId)
     if (!res.ok) return null
@@ -76,7 +82,7 @@ async function tryPiped(videoId: string, instance: string) {
 async function tryInvidious(videoId: string, instance: string) {
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    const timeoutId = setTimeout(() => controller.abort(), 4000)
     const res = await fetch(`${instance}/api/v1/videos/${videoId}`, { signal: controller.signal })
     clearTimeout(timeoutId)
     if (!res.ok) return null
@@ -94,7 +100,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   // Launch all requests concurrently to get the fastest available source
   const promises =[
-    tryCobalt(videoId),
+    ...COBALT_INSTANCES.map(i => tryCobalt(videoId, i)),
     tryRyzen(videoId),
     ...PIPED_INSTANCES.map(i => tryPiped(videoId, i)),
     ...INVIDIOUS_INSTANCES.map(i => tryInvidious(videoId, i))
