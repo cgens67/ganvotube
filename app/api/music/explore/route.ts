@@ -26,25 +26,24 @@ export async function GET() {
   try {
     await ensureInitialized()
     
-    // Fetch categories and specific creator top picks concurrently
+    // Fetch categories concurrently
     const [artistsRes, songsRes, albumsRes] = await Promise.all([
       ytmusic.searchArtists("Top Global Artists"),
       ytmusic.searchSongs("Top Global Hits"),
       ytmusic.searchAlbums("Top Albums 2024")
     ])
     
-    const picksIds =['M_DiTjNBiOY', 'nmbiBVPe5bY', 'p9OtySpRRL8', 'iHsObIWkM-s', '_2qJy5r-WAY', 'M2dgm4xK3IY', 'DntZ3-yCaFs', '-KrC-gqKTMg']
-    const picksData = await Promise.all(picksIds.map(id => ytmusic.getSong(id).catch(() => null)))
-    
-    const creatorsPicks = picksData.filter(Boolean).map(s => ({
-      videoId: s.videoId,
-      title: s.name,
-      artist: s.artist?.name || 'Unknown Artist',
-      artistId: s.artist?.artistId || null,
-      album: s.album?.name || '',
-      duration: s.duration || 0,
-      thumbnail: formatThumb(s.thumbnails)
-    }))
+    // Hardcoded Creator's Picks for maximum speed and reliability
+    const creatorsPicks =[
+      { videoId: 'M_DiTjNBiOY', title: 'XO Tour Llif3', artist: 'Lil Uzi Vert', thumbnail: 'https://i.ytimg.com/vi/M_DiTjNBiOY/mqdefault.jpg', duration: 182 },
+      { videoId: 'nmbiBVPe5bY', title: 'APT.', artist: 'ROSÉ & Bruno Mars', thumbnail: 'https://i.ytimg.com/vi/nmbiBVPe5bY/mqdefault.jpg', duration: 170 },
+      { videoId: 'p9OtySpRRL8', title: 'Die With A Smile', artist: 'Lady Gaga, Bruno Mars', thumbnail: 'https://i.ytimg.com/vi/p9OtySpRRL8/mqdefault.jpg', duration: 251 },
+      { videoId: 'iHsObIWkM-s', title: 'Heartless', artist: 'The Weeknd', thumbnail: 'https://i.ytimg.com/vi/iHsObIWkM-s/mqdefault.jpg', duration: 201 },
+      { videoId: '_2qJy5r-WAY', title: 'Starboy', artist: 'The Weeknd', thumbnail: 'https://i.ytimg.com/vi/_2qJy5r-WAY/mqdefault.jpg', duration: 230 },
+      { videoId: 'M2dgm4xK3IY', title: 'Blinding Lights', artist: 'The Weeknd', thumbnail: 'https://i.ytimg.com/vi/M2dgm4xK3IY/mqdefault.jpg', duration: 200 },
+      { videoId: 'DntZ3-yCaFs', title: 'Save Your Tears', artist: 'The Weeknd', thumbnail: 'https://i.ytimg.com/vi/DntZ3-yCaFs/mqdefault.jpg', duration: 215 },
+      { videoId: '-KrC-gqKTMg', title: 'Die For You', artist: 'The Weeknd', thumbnail: 'https://i.ytimg.com/vi/-KrC-gqKTMg/mqdefault.jpg', duration: 200 }
+    ];
     
     const artists = artistsRes.slice(0, 15).map(a => ({
       artistId: a.artistId,
