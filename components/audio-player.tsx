@@ -562,18 +562,65 @@ export function AudioPlayer() {
 
       try {
         const vId = currentSong.videoId;
-        const response = await fetch(`/api/music/stream/${vId}?quality=${audioQuality}`)
-        const data = await response.json()
+        let finalUrl = null;
 
-        if (data.audioUrl) {
-          setAudioUrl(data.audioUrl)
-        } else if (data.error) {
-          throw new Error(data.error)
+        try {
+          finalUrl = await Promise.any([
+            ...[
+              'https://pipedapi.kavin.rocks',
+              'https://pipedapi.smnz.de',
+              'https://pipedapi.adminforge.de',
+              'https://pipedapi.moomoo.me'
+            ].map(async (instance) => {
+              const controller = new AbortController();
+              const id = setTimeout(() => controller.abort(), 6000);
+              const res = await fetch(`${instance}/streams/${vId}`, { signal: controller.signal });
+              clearTimeout(id);
+              if (!res.ok) throw new Error();
+              const data = await res.json();
+              const audioStreams = (data.audioStreams ||[])
+                .filter((s: any) => s.url && s.mimeType?.includes('audio'))
+                .sort((a: any, b: any) => audioQuality === 'Low' ? (a.bitrate || 0) - (b.bitrate || 0) : (b.bitrate || 0) - (a.bitrate || 0));
+              
+              if (audioStreams.length > 0) return audioStreams[0].url;
+              throw new Error();
+            }),
+            (async () => {
+              const controller = new AbortController();
+              const id = setTimeout(() => controller.abort(), 6000);
+              const res = await fetch(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=https://youtu.be/${vId}`, { signal: controller.signal });
+              clearTimeout(id);
+              if (!res.ok) throw new Error();
+              const json = await res.json();
+              if (json.url || json.download_url) return json.url || json.download_url;
+              throw new Error();
+            })()
+          ]);
+        } catch (e) {
+           finalUrl = null;
+        }
+
+        // Absolute robust fallback (delegates to server-side Invidious tunneling avoiding IP 403s completely)
+        if (!finalUrl) {
+          const response = await fetch(`/api/music/stream/${vId}?quality=${audioQuality}`)
+          const data = await response.json()
+
+          if (data.audioUrl) {
+            finalUrl = data.audioUrl
+          } else if (data.error) {
+            throw new Error(data.error)
+          } else {
+            throw new Error("No audio stream available")
+          }
+        }
+
+        if (finalUrl) {
+          setAudioUrl(finalUrl)
         } else {
-          throw new Error("No audio stream available")
+          setLoadError("Stream extraction failed globally.")
         }
       } catch (error: any) {
-        setLoadError(error.message || "Network error. Please try again.")
+        setLoadError("Could not process audio track. The song may be unavailable or restricted.")
       } finally {
         setIsLoading(false)
       }
