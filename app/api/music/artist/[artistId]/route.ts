@@ -30,26 +30,30 @@ export async function GET(
       return url
     }
 
-    const topSongs = (artistData.topSongs ||[]).map((song) => ({
+    const topSongs = (artistData.topSongs ||[]).map((song: any) => ({
       videoId: song.videoId,
-      title: song.name,
+      title: song.title || song.name,
       artist: artistData.name,
       artistId: artistId,
-      album: song.album?.name || '',
+      album: song.album?.name || song.album?.title || '',
       duration: song.duration || 0,
       thumbnail: formatThumbnail(song.thumbnails),
     }))
 
-    const albums = (artistData.albums ||[]).map((album) => ({
-      albumId: album.browseId || album.albumId, // Fixed mapping
-      title: album.title,
+    // YTMusic API occasionally wraps these lists inside `.results` object.
+    const albumsList = Array.isArray(artistData.albums) ? artistData.albums : (artistData.albums?.results ||[])
+    const singlesList = Array.isArray(artistData.singles) ? artistData.singles : (artistData.singles?.results ||[])
+
+    const albums = albumsList.map((album: any) => ({
+      albumId: album.browseId || album.albumId || album.id,
+      title: album.title || album.name,
       year: album.year,
       thumbnail: formatThumbnail(album.thumbnails)
     }))
 
-    const singles = (artistData.singles ||[]).map((single) => ({
-      albumId: single.browseId || single.albumId, // Fixed mapping
-      title: single.title,
+    const singles = singlesList.map((single: any) => ({
+      albumId: single.browseId || single.albumId || single.id,
+      title: single.title || single.name,
       year: single.year,
       thumbnail: formatThumbnail(single.thumbnails)
     }))
