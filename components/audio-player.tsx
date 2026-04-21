@@ -68,7 +68,7 @@ const ScrollableRow = ({ children, title, icon: Icon }: { children: React.ReactN
 }
 
 export function AudioPlayer() {
-  const [isDark, setIsDark] = useState(false)
+  const[isDark, setIsDark] = useState(false)
   const[isFullscreen, setIsFullscreen] = useState(false)
   
   const[searchQuery, setSearchQuery] = useState("")
@@ -76,26 +76,26 @@ export function AudioPlayer() {
   const[searchSort, setSearchSort] = useState<'relevance' | 'az' | 'za'>('relevance')
   const[isSearching, setIsSearching] = useState(false)
   const[isSearchExpanded, setIsSearchExpanded] = useState(false)
-  const [searchHistory, setSearchHistory] = useState<string[]>([])
+  const[searchHistory, setSearchHistory] = useState<string[]>([])
   const[searchFocused, setSearchFocused] = useState(false)
   
   const[queue, setQueue] = useState<Song[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const[currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const[duration, setDuration] = useState(0)
   const[volume, setVolume] = useState(80)
-  const [isMuted, setIsMuted] = useState(false)
+  const[isMuted, setIsMuted] = useState(false)
   const [shuffle, setShuffle] = useState(false)
   const[repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off")
   const[isLoading, setIsLoading] = useState(false)
   const[loadError, setLoadError] = useState<string | null>(null)
   
-  const [playbackRate, setPlaybackRate] = useState(1)
+  const[playbackRate, setPlaybackRate] = useState(1)
   const [preservesPitch, setPreservesPitch] = useState(false)
 
   const [lyrics, setLyrics] = useState<LyricsData | null>(null)
-  const [currentLyricIndex, setCurrentLyricIndex] = useState(-1)
+  const[currentLyricIndex, setCurrentLyricIndex] = useState(-1)
 
   const [activeTab, setActiveTab] = useState<'player' | 'explore' | 'queue' | 'lyrics' | 'library' | 'artist' | 'album' | 'playlistView'>('explore')
   const[isMobilePlayerExpanded, setIsMobilePlayerExpanded] = useState(false)
@@ -620,7 +620,7 @@ export function AudioPlayer() {
   useEffect(() => {
     if (ytPlayerRef.current && ytPlayerRef.current.setVolume) ytPlayerRef.current.setVolume(volume);
     if (ytPlayerRef.current && ytPlayerRef.current.mute) isMuted ? ytPlayerRef.current.mute() : ytPlayerRef.current.unMute();
-  }, [volume, isMuted]);
+  },[volume, isMuted]);
 
   // ============================================================== //
 
@@ -667,7 +667,7 @@ export function AudioPlayer() {
         }, 50)
       }
     }
-  }, [currentTime, lyrics, currentLyricIndex])
+  },[currentTime, lyrics, currentLyricIndex])
 
   const playNext = useCallback(() => {
     if (queue.length === 0) return
@@ -1362,7 +1362,10 @@ export function AudioPlayer() {
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto min-h-0 overscroll-contain transition-all duration-500">
+          <div className={cn(
+            "flex-1 min-h-0 overscroll-contain transition-all duration-500",
+            ['lyrics', 'queue', 'library'].includes(activeTab) ? "overflow-hidden flex flex-col" : "overflow-y-auto"
+          )}>
             {activeTab === 'explore' || activeTab === 'artist' || activeTab === 'player' || activeTab === 'album' || activeTab === 'playlistView' ? (
               <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                 <Music2 className="h-12 w-12 text-muted-foreground/40 mb-4" />
@@ -1390,7 +1393,7 @@ export function AudioPlayer() {
                 </div>
               </div>
             ) : activeTab === 'library' ? (
-               <div className="p-4 space-y-6 pb-32 animate-in slide-in-from-bottom-8 duration-700 ease-out overflow-y-auto" style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 90%, transparent 100%)' }}>
+               <div className="h-full w-full p-4 space-y-6 pb-32 animate-in slide-in-from-bottom-8 duration-700 ease-out overflow-y-auto" style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 90%, transparent 100%)' }}>
                   {/* Playlists Section */}
                   <div>
                     <div className="mb-4 px-2 flex items-center justify-between">
@@ -1456,7 +1459,7 @@ export function AudioPlayer() {
                   </div>
                </div>
             ) : (
-              <div className="p-3 space-y-2 pb-32 animate-in slide-in-from-bottom-8 duration-700 ease-out overflow-y-auto no-scrollbar" style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)' }}>
+              <div className="h-full w-full p-3 space-y-2 pb-32 animate-in slide-in-from-bottom-8 duration-700 ease-out overflow-y-auto no-scrollbar" style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)' }}>
                 {queue.length > 0 ? (
                   queue.map((song, index) => (
                     <div key={`${song.videoId}-${index}`} className={cn("group flex items-center gap-3 rounded-2xl p-2 transition-all duration-300 hover:bg-muted/80", index === currentIndex ? "bg-primary/5 shadow-sm border border-primary/10 scale-[1.02]" : "border border-transparent")}>
@@ -1585,7 +1588,10 @@ export function AudioPlayer() {
           </DropdownMenu>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 relative px-6 pb-6 flex flex-col z-10">
+        <div className={cn(
+          "flex-1 min-h-0 relative px-6 pb-6 flex flex-col z-10",
+          mobilePlayerTab === 'player' ? "overflow-y-auto" : "overflow-hidden"
+        )}>
           {mobilePlayerTab === 'player' && currentSong && (
             <div className="flex flex-col items-center min-h-full py-4 animate-in fade-in zoom-in-95 duration-500 relative">
               {loadError && (
