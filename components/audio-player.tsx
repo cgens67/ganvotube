@@ -164,49 +164,12 @@ export function AudioPlayer() {
     return "text-xl md:text-2xl"
   }
 
-  // Setup Web Audio API for Volume Normalization
+  // Web Audio Context routing currently suspended to allow non-CORS proxy streams to play.
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
-
-    const setupWebAudio = () => {
-      try {
-        if (!audioCtxRef.current) {
-          const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-          audioCtxRef.current = new AudioContext();
-          sourceNodeRef.current = audioCtxRef.current.createMediaElementSource(audioEl);
-          compressorRef.current = audioCtxRef.current.createDynamicsCompressor();
-
-          compressorRef.current.threshold.value = -24;
-          compressorRef.current.knee.value = 30;
-          compressorRef.current.ratio.value = 12;
-          compressorRef.current.attack.value = 0.003;
-          compressorRef.current.release.value = 0.25;
-
-          sourceNodeRef.current.connect(compressorRef.current);
-          compressorRef.current.connect(audioCtxRef.current.destination);
-        }
-
-        if (normalizeVolume && sourceNodeRef.current && compressorRef.current && audioCtxRef.current) {
-          sourceNodeRef.current.disconnect();
-          sourceNodeRef.current.connect(compressorRef.current);
-          compressorRef.current.connect(audioCtxRef.current.destination);
-        } else if (!normalizeVolume && sourceNodeRef.current && audioCtxRef.current) {
-          sourceNodeRef.current.disconnect();
-          if (compressorRef.current) compressorRef.current.disconnect();
-          sourceNodeRef.current.connect(audioCtxRef.current.destination);
-        }
-      } catch (e) {
-        console.warn("Web Audio API setup failed, relying on default volume", e);
-      }
-    };
-
-    audioEl.addEventListener('play', setupWebAudio, { once: true });
-    if (!audioEl.paused) setupWebAudio();
-
-    return () => {
-      audioEl.removeEventListener('play', setupWebAudio);
-    }
+    const setupWebAudio = () => { /* Security By-Pass Web Audio Pipeline Ignored */ };
+    return () => {}
   }, [normalizeVolume]);
 
   // Extract Dominant Color for Dynamic Backgrounds
@@ -600,7 +563,6 @@ export function AudioPlayer() {
            finalUrl = null;
         }
 
-        // Absolute robust fallback (delegates to server-side Invidious tunneling avoiding IP 403s completely)
         if (!finalUrl) {
           const response = await fetch(`/api/music/stream/${vId}?quality=${audioQuality}`)
           const data = await response.json()
@@ -610,7 +572,7 @@ export function AudioPlayer() {
           } else if (data.error) {
             throw new Error(data.error)
           } else {
-            throw new Error("No audio stream available")
+            throw new Error("No proxy streaming track mapped.")
           }
         }
 
@@ -620,7 +582,7 @@ export function AudioPlayer() {
           setLoadError("Stream extraction failed globally.")
         }
       } catch (error: any) {
-        setLoadError("Could not process audio track. The song may be unavailable or restricted.")
+        setLoadError("Stream connection dropped. Ensure server proxy connectivity.")
       } finally {
         setIsLoading(false)
       }
@@ -839,7 +801,6 @@ export function AudioPlayer() {
 
       <audio
         ref={audioRef}
-        crossOrigin="anonymous"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onLoadedData={handleLoadedData}
@@ -847,7 +808,7 @@ export function AudioPlayer() {
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
       />
-
+      
       {/* Header - Expressive M3 style */}
       <header className="elevation-1 z-40 flex h-16 flex-shrink-0 items-center justify-between px-3 md:px-6 transition-all duration-500 ease-out relative bg-background/90 backdrop-blur-xl border-b border-border/40 gap-2">
         <div className={cn(
