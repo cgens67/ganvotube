@@ -112,22 +112,22 @@ export function AudioPlayer() {
   const[currentPlaylistView, setCurrentPlaylistView] = useState<Playlist | null>(null)
 
   const[showAboutDialog, setShowAboutDialog] = useState(false)
-  const[showCreditsDialog, setShowCreditsDialog] = useState(false)
+  const [showCreditsDialog, setShowCreditsDialog] = useState(false)
   const[showAccountSettings, setShowAccountSettings] = useState(false) 
   const[showPlayerSettings, setShowPlayerSettings] = useState(false) 
-  const[showEffectsDialog, setShowEffectsDialog] = useState(false)
+  const [showEffectsDialog, setShowEffectsDialog] = useState(false)
   const[showPlaylistDialog, setShowPlaylistDialog] = useState(false)
   const[newPlaylistName, setNewPlaylistName] = useState("")
   
-  const[dynamicTheme, setDynamicTheme] = useState(true)
+  const [dynamicTheme, setDynamicTheme] = useState(true)
   const[playerBgStyle, setPlayerBgStyle] = useState<'Theme' | 'Gradient' | 'Blur'>('Gradient')
   const[thumbnailRadius, setThumbnailRadius] = useState(32)
   const[dominantColor, setDominantColor] = useState<string | null>(null)
-  const[lyricsProvider, setLyricsProvider] = useState<'lrclib' | 'kugou'>('lrclib')
-  const[lyricsSize, setLyricsSize] = useState<'Normal' | 'Large' | 'Extra Large'>('Normal')
+  const [lyricsProvider, setLyricsProvider] = useState<'lrclib' | 'kugou'>('lrclib')
+  const [lyricsSize, setLyricsSize] = useState<'Normal' | 'Large' | 'Extra Large'>('Normal')
   const[audioQuality, setAudioQuality] = useState<'High' | 'Standard' | 'Low'>('High')
   const[autoPlaySimilar, setAutoPlaySimilar] = useState(false)
-  const[audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
   
   const[showAuthDialog, setShowAuthDialog] = useState(false)
   const [user, setUser] = useState<FirebaseUser | null>(null)
@@ -446,6 +446,10 @@ export function AudioPlayer() {
       localStorage.setItem('ganvo_search_history', JSON.stringify(newHistory))
     }
     
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      setActiveTab('player');
+    }
+    
     // Check if the current queued song array contains our requested track natively already.
     const existingIndex = queue.findIndex((s) => s.videoId === song.videoId)
     
@@ -508,13 +512,14 @@ export function AudioPlayer() {
     const initPlayer = () => {
       if (!ytParentRef.current || !isMounted) return;
       
+      // Isolate React's virtual DOM from Google API overwriting the Div
       const playerDiv = document.createElement('div');
       ytParentRef.current.innerHTML = '';
       ytParentRef.current.appendChild(playerDiv);
 
       ytPlayerRef.current = new (window as any).YT.Player(playerDiv, {
         height: '1', width: '1',
-        videoId: currentSong?.videoId || '',
+        videoId: currentSong?.videoId || '', // Explicit payload bypass origin
         playerVars: { playsinline: 1, controls: 0, disablekb: 1 },
         events: {
           onReady: (event: any) => {
@@ -788,12 +793,12 @@ export function AudioPlayer() {
       <header className="elevation-1 z-40 flex h-16 flex-shrink-0 items-center justify-between px-3 md:px-6 transition-all duration-500 ease-out relative bg-background/90 backdrop-blur-xl border-b border-border/40 gap-2">
         <div className={cn(
           "flex items-center shrink-0 transition-all duration-500 ease-[cubic-bezier(0.2,0,0,1)] origin-left whitespace-nowrap overflow-hidden", 
-          searchFocused ? "max-w-0 opacity-0 md:w-auto md:min-w-[140px] md:mr-4 gap-0 md:gap-3 border-0 p-0" : "max-w-[280px] opacity-100 mr-2 md:mr-4 gap-3"
+          searchFocused ? "max-w-0 opacity-0 gap-0 border-0 p-0 mr-0 md:max-w-[280px] md:opacity-100 md:gap-3 md:mr-4" : "max-w-[280px] opacity-100 mr-2 md:mr-4 gap-3"
         )}>
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-110 shadow-md">
             <Music2 className="h-5 w-5 text-primary-foreground fill-current" />
           </div>
-          <div className={cn("hidden sm:flex items-baseline pl-1 opacity-100 transition-opacity duration-300", searchFocused && "md:flex")}>
+          <div className="hidden sm:flex items-baseline pl-1 opacity-100 transition-opacity duration-300">
             <span className="text-xl font-normal text-muted-foreground tracking-tight">Ganvo</span>
             <span className="text-[20px] font-bold tracking-tight text-foreground ml-1">Music</span>
           </div>
@@ -812,7 +817,7 @@ export function AudioPlayer() {
               className={cn(
                 "h-11 md:h-12 w-full rounded-full border-0 bg-muted/80 pl-12 pr-12 text-base shadow-none transition-all duration-500 ease-[cubic-bezier(0.2,0,0,1)] text-foreground outline-none focus:outline-none focus-visible:outline-none",
                 "focus-visible:ring-2 focus-visible:ring-primary focus-visible:bg-card focus-visible:shadow-lg sm:placeholder:text-transparent md:placeholder:text-muted-foreground",
-                searchFocused && "bg-card shadow-lg ring-2 ring-primary scale-[1.01]"
+                searchFocused && "bg-card shadow-lg ring-2 ring-primary scale-[1.01] md:scale-100"
               )}
             />
             {searchQuery && (
@@ -1828,7 +1833,7 @@ export function AudioPlayer() {
                     value={[thumbnailRadius]} 
                     min={0} max={64} step={2} 
                     onValueChange={(val) => setThumbnailRadius(val[0])} 
-                    className="[&_[data-slot=range]]:bg-blue-500 [&_[data-slot=thumb]]:h-5 [&_[data-slot=thumb]]:w-5" 
+                    className="[&_[data-slot=range]]:bg-blue-500[&_[data-slot=thumb]]:h-5 [&_[data-slot=thumb]]:w-5" 
                   />
                </div>
                
