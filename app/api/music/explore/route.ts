@@ -17,7 +17,7 @@ async function ensureInitialized() {
 const formatThumb = (thumbnails: any[]) => {
   let url = thumbnails?.[thumbnails.length - 1]?.url || ''
   if (url.includes('=w') || url.includes('-w')) {
-    url = url.replace(/([=-]w)\d+([=-]h)\d+.*/, '$11200$21200-c')
+    url = url.replace(/([=-]w)\d+([=-]h)\d+.*/, '$11280$2720')
   }
   return url
 }
