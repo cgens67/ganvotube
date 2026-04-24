@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
     
     const songs = results.slice(0, 20).map((song) => {
       let thumbUrl = song.thumbnails?.[song.thumbnails.length - 1]?.url || ''
-      // Force perfect square crop (-c) with 1200x1200px resolution
+      // Switch back to 16:9 layout
       if (thumbUrl.includes('=w') || thumbUrl.includes('-w')) {
-        thumbUrl = thumbUrl.replace(/([=-]w)\d+([=-]h)\d+.*/, '$11200$21200-c')
+        thumbUrl = thumbUrl.replace(/([=-]w)\d+([=-]h)\d+.*/, '$11280$2720')
       }
 
       return {
