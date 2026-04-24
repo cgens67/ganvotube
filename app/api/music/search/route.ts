@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import YTMusic from 'ytmusic-api'
-
-const ytmusic = new YTMusic()
-let initialized = false
-
-async function ensureInitialized() {
-  if (!initialized) {
-    await ytmusic.initialize()
-    initialized = true
-  }
-}
+import ytSearch from 'yt-search'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -20,30 +10,22 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    await ensureInitialized()
-    const results = await ytmusic.searchSongs(query)
+    // Queries the generic YouTube database
+    const results = await ytSearch(query)
     
-    const songs = results.slice(0, 20).map((song) => {
-      let thumbUrl = song.thumbnails?.[song.thumbnails.length - 1]?.url || ''
-      // Switch back to 16:9 layout
-      if (thumbUrl.includes('=w') || thumbUrl.includes('-w')) {
-        thumbUrl = thumbUrl.replace(/([=-]w)\d+([=-]h)\d+.*/, '$11280$2720')
-      }
+    const videos = results.videos.slice(0, 20).map((v) => ({
+      videoId: v.videoId,
+      title: v.title,
+      artist: v.author?.name || 'YouTube',
+      artistId: v.author?.url || null,
+      album: '',
+      duration: v.seconds || 0,
+      thumbnail: v.thumbnail || v.image,
+    }))
 
-      return {
-        videoId: song.videoId,
-        title: song.name,
-        artist: song.artist?.name || 'Unknown Artist',
-        artistId: song.artist?.artistId || null,
-        album: song.album?.name || '',
-        duration: song.duration || 0,
-        thumbnail: thumbUrl,
-      }
-    })
-
-    return NextResponse.json({ results: songs })
+    return NextResponse.json({ results: videos })
   } catch (error) {
-    console.error('YouTube Music search error:', error)
-    return NextResponse.json({ error: 'Failed to search songs' }, { status: 500 })
+    console.error('YouTube search error:', error)
+    return NextResponse.json({ error: 'Failed to search videos' }, { status: 500 })
   }
 }
