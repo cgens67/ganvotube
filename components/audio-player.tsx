@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { 
   Play, Pause, Search, Home, Library, Settings, Info, ListPlus, X, ThumbsUp, 
-  Share2, MoreHorizontal, Youtube, Loader2, ListMusic, UserCircle2, LogOut, Moon, Trash2, History, MicVocal, Speaker, ListFilter,
+  Share2, MoreHorizontal, Youtube, Loader2, ListMusic, UserCircle2, LogOut, Moon, Trash2, History, Speaker, ListFilter,
   ArrowLeft
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -84,7 +84,7 @@ export function AudioPlayer() {
   const[isLoading, setIsLoading] = useState(false)
   const[loadError, setLoadError] = useState<string | null>(null)
   
-  const [lyrics, setLyrics] = useState<LyricsData | null>(null)
+  const[lyrics, setLyrics] = useState<LyricsData | null>(null)
   const[currentLyricIndex, setCurrentLyricIndex] = useState(-1)
 
   const[exploreData, setExploreData] = useState<{creatorsPicks: Song[], artists: any[], songs: Song[], albums: any[]}>({creatorsPicks:[], artists:[], songs: [], albums:[]})
@@ -104,13 +104,13 @@ export function AudioPlayer() {
   const[showAuthDialog, setShowAuthDialog] = useState(false)
   const[showAccountSettings, setShowAccountSettings] = useState(false)
   const[user, setUser] = useState<FirebaseUser | null>(null)
-  const [email, setEmail] = useState("")
+  const[email, setEmail] = useState("")
   const[password, setPassword] = useState("")
   const[isSignUp, setIsSignUp] = useState(false)
   const[authError, setAuthError] = useState("")
   const[displayNameInput, setDisplayNameInput] = useState("")
   
-  const [likedSongs, setLikedSongs] = useState<Set<string>>(new Set())
+  const[likedSongs, setLikedSongs] = useState<Set<string>>(new Set())
   const[savedSongs, setSavedSongs] = useState<Song[]>([])
   const[playlists, setPlaylists] = useState<Playlist[]>([])
 
@@ -399,7 +399,7 @@ export function AudioPlayer() {
           },
           onError: () => {
             setIsLoading(false); setIsPlaying(false);
-            setLoadError("Audio track unavailable in your region. Trying next...");
+            setLoadError("Video track unavailable in your region. Trying next...");
             setTimeout(() => { if (currentIndex < queue.length - 1) setCurrentIndex(currentIndex + 1) }, 3000);
           }
         }
@@ -708,7 +708,7 @@ export function AudioPlayer() {
                                  <img src={currentSong.thumbnail || "/placeholder.svg"} className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover" />
                                  <div>
                                     <p className="font-bold text-sm md:text-base leading-none">{currentSong.artist}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{currentSong.album || 'Music Artist'}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{currentSong.album || 'Channel'}</p>
                                  </div>
                                  <Button variant="secondary" className="ml-2 rounded-full font-bold hidden sm:flex bg-foreground text-background hover:bg-foreground/90">Subscribe</Button>
                               </div>
@@ -735,9 +735,9 @@ export function AudioPlayer() {
                               </div>
                            </div>
 
-                           {/* Lyrics Box */}
+                           {/* Lyrics Box / Description */}
                            <div className="mt-4 bg-secondary/50 rounded-xl p-4">
-                              <h3 className="font-bold mb-2 text-sm">Lyrics</h3>
+                              <h3 className="font-bold mb-2 text-sm">Lyrics / Description</h3>
                               {lyrics?.plainLyrics ? (
                                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{lyrics.plainLyrics}</p>
                               ) : lyrics?.syncedLyrics ? (
@@ -806,13 +806,13 @@ export function AudioPlayer() {
               ) : exploreError ? (
                  <div className="flex flex-col items-center justify-center py-32 text-center">
                    <p className="font-bold text-2xl mb-2 text-foreground">Explore Unavailable</p>
-                   <p className="text-sm text-muted-foreground">Servers are temporarily busy. Use the search bar to find music.</p>
+                   <p className="text-sm text-muted-foreground">Servers are temporarily busy. Use the search bar to find videos.</p>
                  </div>
               ) : (
                  <div className="space-y-10 max-w-[1800px] mx-auto">
                    {exploreData?.creatorsPicks?.length > 0 && (
                       <div>
-                         <h2 className="text-xl md:text-2xl font-bold mb-4">Recommended for you</h2>
+                         <h2 className="text-xl md:text-2xl font-bold mb-4">Trending Now</h2>
                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                             {exploreData.creatorsPicks.map((song, idx) => (
                                <VideoCard key={idx} song={song} onClick={() => addToQueueAndPlay(song)} />
@@ -822,7 +822,7 @@ export function AudioPlayer() {
                    )}
                    {exploreData?.songs?.length > 0 && (
                       <div>
-                         <h2 className="text-xl md:text-2xl font-bold mb-4">Trending Music Videos</h2>
+                         <h2 className="text-xl md:text-2xl font-bold mb-4">Gaming & Entertainment</h2>
                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                             {exploreData.songs.slice(0, 10).map((song, idx) => (
                                <VideoCard key={idx} song={song} onClick={() => addToQueueAndPlay(song)} />
@@ -834,7 +834,7 @@ export function AudioPlayer() {
                       <div>
                          <div className="flex items-center gap-3 mb-4 mt-8">
                             <img src="https://www.youtube.com/s/desktop/189bbd8b/img/favicon_144x144.png" className="h-8 w-8 rounded-full" />
-                            <h2 className="text-xl md:text-2xl font-bold">Trending Artists</h2>
+                            <h2 className="text-xl md:text-2xl font-bold">Popular Channels</h2>
                          </div>
                          <div className="flex overflow-x-auto gap-4 md:gap-8 pb-4 no-scrollbar">
                             {exploreData.artists.map((artist, idx) => (
@@ -969,7 +969,7 @@ export function AudioPlayer() {
                    <div className="p-2 bg-muted/80 rounded-full text-foreground"><ListFilter className="w-5 h-5 text-current"/></div>
                    <div className="flex flex-col">
                      <span className="font-semibold text-base text-foreground">Auto-play similar</span>
-                     <span className="text-xs font-normal text-muted-foreground">Keep playing music when queue ends.</span>
+                     <span className="text-xs font-normal text-muted-foreground">Keep playing videos when queue ends.</span>
                    </div>
                  </div>
                  <Switch checked={autoPlaySimilar} onCheckedChange={(val) => { setAutoPlaySimilar(val); localStorage.setItem('ganvo_autoplay_similar', val.toString()) }} className="shrink-0" />
